@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hanzi Quest">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.svg">
+<link rel="stylesheet" href="styles.css">
+<title>Hanzi Quest</title>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div><div class="eyebrow">CHINESE TRAINING</div><h1>Hanzi Quest</h1><div id="filterHeader" class="header-filter">Все слова</div></div>
+    <div class="stats"><span>⭐ <b id="xp">0</b></span><span>🪙 <b id="coins">0</b></span><span>🔥 <b id="combo">0</b></span></div>
+  </header>
+
+  <main>
+    <section id="home" class="screen active">
+      <div class="hero card">
+        <div>
+          <div class="eyebrow">ПЕРСОНАЛЬНАЯ ТРЕНИРОВКА</div>
+          <h2>Учимся через игру.</h2>
+          <p>Выбирай один урок, несколько уроков или весь словарь. Все режимы используют одну общую модель знаний.</p>
+        </div>
+        <button class="primary" data-screen="quest">Начать Quest</button>
+      </div>
+
+      <div class="card lesson-summary-card">
+        <div class="row between"><div><div class="eyebrow">ТЕКУЩИЙ НАБОР</div><h3 id="selectionTitle">Все слова</h3><p id="selectionSummary">0 слов доступно</p></div><button class="secondary" data-screen="lessons">Уроки</button></div>
+      </div>
+
+      <div class="grid">
+        <button class="mode card" data-screen="quest"><span>🗺️</span><b>Quest</b><small>Смешанные задания</small></button>
+        <button class="mode card" data-screen="pinyin"><span>🔤</span><b>Pinyin</b><small>Вспомнить произношение</small></button>
+        <button class="mode card" data-screen="listen"><span>🔊</span><b>Listening</b><small>Узнать слово на слух</small></button>
+        <button class="mode card" data-screen="write"><span>✍️</span><b>Writing</b><small>Apple Pencil</small></button>
+        <button class="mode card" data-screen="boss"><span>👑</span><b>Boss</b><small>Комплексная проверка</small></button>
+        <button class="mode card" data-screen="library"><span>📚</span><b>Dictionary</b><small>Слова, уроки и прогресс</small></button>
+      </div>
+
+      <div class="card import-card">
+        <div class="row between"><div><h3>Мои слова</h3><p id="librarySummary">Словарь пуст.</p></div><button class="secondary" id="importBtn">Импорт TXT / CSV</button></div>
+        <input id="fileInput" type="file" accept=".txt,.csv,.tsv,text/plain,text/csv" hidden>
+      </div>
+    </section>
+
+    <section id="lessons" class="screen">
+      <div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">LESSONS</div><b>Уроки и наборы</b></div><button class="ghost" id="createLesson">＋</button></div>
+      <div id="lessonSelection" class="lesson-list"></div>
+      <div class="sticky-actions">
+        <button class="primary" id="startSelectedQuest">⚔ Quest по выбранным</button>
+        <button class="secondary" id="startSelectedBoss">👑 Общая проверка</button>
+      </div>
+    </section>
+
+    <section id="quest" class="screen game-screen"><div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">QUEST</div><b id="questProgress">1 / 5</b></div><button class="ghost" id="quitGame">×</button></div><div id="question"></div></section>
+    <section id="pinyin" class="screen game-screen"><div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">PINYIN</div><b>Тренировка</b></div></div><div id="pinyinQuestion"></div></section>
+    <section id="listen" class="screen game-screen"><div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">LISTENING</div><b>Слушай и выбирай</b></div></div><div id="listenQuestion"></div></section>
+    <section id="write" class="screen game-screen"><div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">WRITING</div><b>Apple Pencil</b></div></div><div id="writeQuestion"></div></section>
+    <section id="boss" class="screen game-screen"><div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">BOSS</div><b id="bossProgress">Экзамен</b></div></div><div id="bossQuestion"></div></section>
+
+    <section id="library" class="screen"><div class="game-head"><button class="ghost" data-screen="home">←</button><div><div class="eyebrow">DICTIONARY</div><b>Мой словарь</b></div><button class="ghost" id="refreshLibrary">↻</button></div><div id="libraryList"></div></section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-screen="home">⌂<small>Главная</small></button>
+    <button data-screen="lessons">▤<small>Уроки</small></button>
+    <button data-screen="write">✎<small>Письмо</small></button>
+    <button data-screen="boss">♛<small>Boss</small></button>
+    <button data-screen="library">☰<small>Слова</small></button>
+  </nav>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-box"><div id="modalContent"></div><button class="secondary" id="closeModal">Закрыть</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.3/dist/hanzi-writer.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
