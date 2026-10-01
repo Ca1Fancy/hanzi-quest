@@ -1,0 +1,6 @@
+param([int]$Port=8765,[string]$Root=(Split-Path -Parent $MyInvocation.MyCommand.Path))
+$ErrorActionPreference='Stop'
+$rootFull=[IO.Path]::GetFullPath($Root)
+$listener=[Net.HttpListener]::new();$listener.Prefixes.Add("http://127.0.0.1:$Port/");$listener.Start()
+$url="http://127.0.0.1:$Port/";Write-Host "Hanzi Quest: $url";Start-Process $url
+try{while($listener.IsListening){$ctx=$listener.GetContext();$p=$ctx.Request.Url.AbsolutePath.TrimStart('/');if([string]::IsNullOrWhiteSpace($p)){$p='index.html'};$full=[IO.Path]::GetFullPath((Join-Path $rootFull $p));if(-not $full.StartsWith($rootFull,[StringComparison]::OrdinalIgnoreCase)-or -not(Test-Path -LiteralPath $full -PathType Leaf)){$ctx.Response.StatusCode=404;$bytes=[Text.Encoding]::UTF8.GetBytes('Not found')}else{$bytes=[IO.File]::ReadAllBytes($full);switch([IO.Path]::GetExtension($full).ToLower()){'.html'{$ctx.Response.ContentType='text/html; charset=utf-8'}'.txt'{$ctx.Response.ContentType='text/plain; charset=utf-8'}'.css'{$ctx.Response.ContentType='text/css; charset=utf-8'}'.js'{$ctx.Response.ContentType='text/javascript; charset=utf-8'}default{$ctx.Response.ContentType='application/octet-stream'}}$ctx.Response.StatusCode=200};$ctx.Response.ContentLength64=$bytes.Length;$ctx.Response.OutputStream.Write($bytes,0,$bytes.Length);$ctx.Response.OutputStream.Close()}}finally{$listener.Stop()}
