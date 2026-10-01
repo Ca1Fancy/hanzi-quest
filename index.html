@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f3ea">
+<title>汉字 Quest · v8</title>
+<style>
+:root{
+  --bg:#f6f2e8; --bg2:#fbf9f3; --panel:rgba(255,255,255,.92); --panel-soft:#f0ece3;
+  --text:#242733; --muted:#7d7f88; --accent:#ba7a3d; --accent-2:#6f9b8a;
+  --good:#3c9b70; --bad:#c96565; --line:#ddd6c8; --shadow:0 18px 50px rgba(43,35,23,.11);
+  --radius:26px; --radius-sm:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Noto Sans",sans-serif;color:var(--text);background:var(--bg)}
+body{overflow-x:hidden;transition:background .35s ease,color .35s ease}
+button,input,textarea,select{font:inherit}
+button{border:0;cursor:pointer;color:inherit}
+button:disabled{opacity:.45;cursor:not-allowed}
+body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;opacity:0;transition:opacity .4s ease}
+body::after{z-index:-1}
+body[data-theme="night"]{--bg:#111827;--bg2:#182234;--panel:rgba(24,34,50,.9);--panel-soft:#202c40;--text:#f2f4f8;--muted:#a6afbf;--accent:#d5ad63;--accent-2:#88b6a7;--line:#344257;--shadow:0 18px 50px rgba(0,0,0,.3)}
+body[data-theme="night"]::before{opacity:1;background:radial-gradient(circle at 15% 18%,rgba(255,255,255,.42) 0 1px,transparent 2px),radial-gradient(circle at 75% 14%,rgba(255,255,255,.35) 0 1px,transparent 2px),radial-gradient(circle at 86% 68%,rgba(255,255,255,.3) 0 1px,transparent 2px),radial-gradient(circle at 45% 82%,rgba(255,255,255,.22) 0 1px,transparent 2px),linear-gradient(180deg,#101827,#172235)}
+body[data-theme="night"]::after{opacity:1;background:radial-gradient(circle at 80% 10%,rgba(230,239,255,.12) 0 60px,transparent 61px)}
+body[data-theme="sakura"]{--bg:#fbf3f4;--bg2:#fff9fa;--panel:rgba(255,255,255,.94);--panel-soft:#f8e7ea;--text:#343039;--muted:#8e7c85;--accent:#c77f8e;--accent-2:#7d9a89;--line:#ead6db}
+body[data-theme="sakura"]::before{opacity:1;background:radial-gradient(circle at 10% 18%,rgba(201,127,143,.23) 0 5px,transparent 6px),radial-gradient(circle at 84% 12%,rgba(201,127,143,.18) 0 4px,transparent 5px),radial-gradient(circle at 22% 80%,rgba(201,127,143,.15) 0 4px,transparent 5px),radial-gradient(circle at 72% 88%,rgba(201,127,143,.18) 0 5px,transparent 6px)}
+body[data-theme="ink"]{--bg:#eee9df;--bg2:#f6f3ec;--panel:rgba(249,247,241,.94);--panel-soft:#e7e1d5;--text:#26262a;--muted:#77736d;--accent:#2d455b;--accent-2:#9b6b3a;--line:#d5cbbb}
+body[data-theme="ink"]::before{opacity:1;background:radial-gradient(ellipse at 15% 18%,rgba(45,69,91,.05) 0 30px,transparent 31px),radial-gradient(ellipse at 85% 72%,rgba(155,107,58,.06) 0 46px,transparent 47px);filter:blur(2px)}
+#app{min-height:100vh;padding:max(14px,env(safe-area-inset-top)) 14px max(22px,env(safe-area-inset-bottom));display:flex;justify-content:center}
+.shell{width:min(860px,100%)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 10px}
+.brand{font-weight:800;letter-spacing:.2px;font-size:18px;display:flex;align-items:center;gap:8px}
+.stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pill{background:var(--panel);border:1px solid var(--line);padding:9px 11px;border-radius:999px;box-shadow:0 4px 16px rgba(20,20,20,.04);font-size:13px;white-space:nowrap}
+.pill strong{font-weight:800}
+.screen{display:none;animation:fadein .24s ease}.screen.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.home{display:grid;gap:14px}
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:10px 16px 10px;min-height:275px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:auto -15% -42% -15%;height:52%;background:radial-gradient(ellipse,rgba(186,122,61,.11),transparent 66%);pointer-events:none}
+.hero-top{width:100%;display:flex;justify-content:space-between;align-items:flex-start;position:absolute;top:9px;left:0;padding:0 11px}
+.lesson-shortcut{background:var(--panel-soft);border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;max-width:78%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.helper-note{font-size:12px;color:var(--muted)}
+.pet-button{background:transparent;padding:0;position:relative;z-index:2;touch-action:manipulation}
+.pet-wrap{position:relative;width:116px;height:116px;display:grid;place-items:center}
+.pet{width:96px;height:96px;filter:drop-shadow(0 11px 14px rgba(50,40,35,.11));transform-origin:50% 76%;animation:float 3.6s ease-in-out infinite}
+.pet--happy{animation:happy .8s ease both}.pet--sad{animation:sad .7s ease both}.pet--celebrate{animation:celebrate 1s ease both}.pet--sleep{animation:sleep 1.2s ease both}.pet--shop{animation:shop .72s ease both}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes happy{0%{transform:scale(1)}30%{transform:translateY(-12px) rotate(-4deg) scale(1.03)}60%{transform:translateY(-18px) rotate(4deg) scale(1.05)}100%{transform:translateY(0) scale(1)}}
+@keyframes sad{0%{transform:translateX(0) rotate(0)}25%{transform:translateX(-7px) rotate(-3deg)}50%{transform:translateX(7px) rotate(3deg)}75%{transform:translateX(-4px) rotate(-2deg)}100%{transform:none}}
+@keyframes celebrate{0%{transform:scale(1)}22%{transform:scale(1.05) rotate(-6deg)}44%{transform:scale(1.1) rotate(6deg)}66%{transform:scale(1.06) rotate(-4deg)}100%{transform:scale(1)}}
+@keyframes sleep{0%{transform:rotate(0)}50%{transform:rotate(5deg) translateY(4px)}100%{transform:rotate(0)}}
+@keyframes shop{0%{transform:translateY(0)}35%{transform:translateX(-7px)}70%{transform:translateX(7px)}100%{transform:none}}
+.pet-toy-button{position:absolute;right:-2px;bottom:26px;background:transparent;padding:0;border-radius:50%;z-index:3;touch-action:manipulation}.pet-toy{position:relative;right:2px;bottom:32px;font-size:30px;animation:toyfloat 2.2s ease-in-out infinite}.pet-accessory{position:absolute;top:7px;right:8px;font-size:25px;filter:drop-shadow(0 5px 7px rgba(0,0,0,.08))}
+@keyframes toyfloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-5px) rotate(4deg)}}
+.hero-title{font-size:clamp(21px,3.7vw,26px);font-weight:900;letter-spacing:-.45px;margin:0 0 4px;text-align:center;position:relative;z-index:2}.hero-sub{color:var(--muted);text-align:center;max-width:460px;line-height:1.4;font-size:12px;position:relative;z-index:2}
+.primary{background:var(--accent);color:#fff;border-radius:17px;padding:14px 18px;font-weight:800;box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 24%,transparent);transition:.18s transform,.18s filter}.primary:active{transform:translateY(1px)}
+.primary.big{font-size:14px;min-width:min(280px,84vw);margin-top:7px;padding:10px 14px}
+.secondary{background:var(--panel-soft);border:1px solid var(--line);border-radius:15px;padding:11px 13px;font-weight:700}.ghost{background:transparent;border:1px solid var(--line);border-radius:14px;padding:9px 12px}
+.home-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;position:relative;z-index:2;margin-top:8px}.linkbtn{background:transparent;color:var(--muted);font-weight:700;padding:6px 7px}
+.memory-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:11px 12px;box-shadow:0 7px 22px rgba(20,20,20,.05)}
+.memory-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.memory-head strong{font-size:14px}.memory-bars{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.mem{background:var(--panel-soft);border-radius:12px;padding:8px 9px;font-size:11px}.mem b{display:block;font-size:15px;margin-top:2px}.mem.good{border:1px solid color-mix(in srgb,var(--good) 25%,var(--line))}.mem.warn{border:1px solid rgba(186,122,61,.25)}.mem.bad{border:1px solid color-mix(in srgb,var(--bad) 25%,var(--line))}
+.compact-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:13px 14px;box-shadow:0 7px 24px rgba(20,20,20,.04)}
+.mini-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.mini-title{font-weight:800}.mini-muted{font-size:12px;color:var(--muted);line-height:1.4}.boss-mini{display:flex;align-items:center;gap:12px}.boss-icon{font-size:32px}.boss-mini .status{font-size:11px;color:var(--muted)}
+.mode-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.mode-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:13px;min-height:92px;text-align:left;box-shadow:0 8px 24px rgba(20,20,20,.04);display:flex;flex-direction:column;justify-content:space-between}.mode-card .icon{font-size:27px}.mode-card .name{font-weight:850}.mode-card .desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.35}
+.page-head{display:flex;align-items:center;gap:9px;margin:6px 0 13px}.page-head h1{margin:0;font-size:26px}.back{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px 11px}.subtle{color:var(--muted);font-size:13px}
+.session-shell{display:grid;gap:10px}.session-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.progress-line{height:8px;background:var(--panel-soft);border-radius:99px;overflow:hidden;border:1px solid var(--line)}.progress-line span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s ease}.question-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:var(--shadow)}.question-note{text-align:center;color:var(--muted);font-size:13px}.question-main{text-align:center;margin:12px 0}.q-hanzi{font-size:clamp(50px,9vw,68px);font-weight:850;line-height:1}.q-pinyin{font-size:18px;font-weight:750;margin-top:7px}.q-meaning{font-size:14px;color:var(--muted);margin-top:4px}.prompt{font-size:17px;font-weight:800;text-align:center;margin-top:10px}.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.option{background:var(--panel-soft);border:1px solid var(--line);border-radius:15px;padding:12px;font-size:15px;font-weight:750;min-height:52px}.option.correct{background:rgba(60,155,112,.14);border-color:rgba(60,155,112,.45)}.option.wrong{background:rgba(201,101,101,.13);border-color:rgba(201,101,101,.4)}
+.feedback{margin-top:14px;border-radius:17px;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.feedback.good{background:rgba(60,155,112,.12);color:#2e7f60}.feedback.bad{background:rgba(201,101,101,.12);color:#9e4f4f}.feedback .small{font-size:12px;opacity:.8}
+.session-footer{display:flex;justify-content:space-between;gap:10px;align-items:center}.session-footer .reward{font-size:12px;color:var(--muted)}
+.canvas-wrap{position:relative;width:min(360px,100%);margin:14px auto 0}.write-canvas{display:block;width:100%;aspect-ratio:1/1;background:rgba(255,255,255,.55);border:2px dashed var(--line);border-radius:24px;touch-action:none}.write-grid{position:absolute;inset:0;border-radius:24px;pointer-events:none;background:linear-gradient(transparent 49.5%,rgba(120,120,120,.10) 50%,transparent 50.5%),linear-gradient(90deg,transparent 49.5%,rgba(120,120,120,.10) 50%,transparent 50.5%)}.writing-ghost{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;font-size:min(55vw,210px);font-weight:900;color:rgba(186,122,61,.08)}.canvas-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.result-card{text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:24px;box-shadow:var(--shadow)}.result-number{font-size:48px;font-weight:900}.result-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}.rec-list{display:grid;gap:8px;text-align:left;margin-top:16px}.rec{background:var(--panel-soft);border-radius:15px;padding:11px 12px;font-size:13px;display:flex;justify-content:space-between;gap:10px}
+.library{display:grid;gap:12px}.import-panel,.word-panel{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:17px;box-shadow:0 8px 25px rgba(20,20,20,.04)}.import-panel textarea{width:100%;min-height:145px;resize:vertical;border:1px solid var(--line);background:var(--bg2);color:var(--text);border-radius:17px;padding:12px}.file-row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:10px}.file-label{display:inline-flex;align-items:center;gap:8px;padding:11px 14px;border:1px solid var(--line);background:var(--panel-soft);border-radius:15px;font-weight:750;cursor:pointer}.file-label input{display:none}.import-hint{font-size:12px;color:var(--muted);line-height:1.45;margin-top:9px}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.lesson-chip{background:var(--panel-soft);border:1px solid var(--line);padding:8px 11px;border-radius:999px;font-size:12px;font-weight:750}.lesson-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}.word-list{display:grid;gap:8px;max-height:430px;overflow:auto}.word-row{display:grid;grid-template-columns:minmax(80px,.8fr) minmax(90px,.9fr) minmax(120px,1.2fr) 70px;gap:8px;align-items:center;background:var(--panel-soft);border:1px solid var(--line);border-radius:15px;padding:10px 11px}.word-row .hanzi{font-size:24px;font-weight:850}.word-row .pinyin{font-weight:700}.word-row .meaning,.word-row .lesson{font-size:11px;color:var(--muted)}.empty{color:var(--muted);padding:20px;text-align:center}
+.boss{display:grid;gap:12px}.boss-head{background:var(--panel);border:1px solid var(--line);border-radius:25px;padding:18px;box-shadow:var(--shadow)}.boss-title{display:flex;align-items:center;justify-content:space-between;gap:10px}.boss-hp{margin-top:12px}.hp-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}.hpbar{height:15px;background:#2a2930;border-radius:999px;overflow:hidden;border:1px solid var(--line)}.hpbar span{height:100%;width:100%;display:block;background:linear-gradient(90deg,#d76565,#e3a36a);transition:width .25s ease}.boss-lock{display:grid;gap:9px;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:22px;text-align:center}.lock-list{display:grid;gap:7px;max-width:500px;margin:7px auto 0;text-align:left}.lock-list div{background:var(--panel-soft);border-radius:13px;padding:10px 12px;font-size:13px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(18,18,24,.38);backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;padding:12px;z-index:50}.modal-backdrop.open{display:flex}.modal{width:min(620px,100%);max-height:min(88vh,760px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:0 25px 80px rgba(0,0,0,.2);animation:modalin .24s ease}@keyframes modalin{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.modal-head h2{margin:0;font-size:23px}.close{background:var(--panel-soft);border:1px solid var(--line);border-radius:13px;padding:8px 10px}.shop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:13px}.shop-item{background:var(--panel-soft);border:1px solid var(--line);border-radius:18px;padding:13px;display:grid;gap:8px}.shop-item .shop-icon{font-size:28px}.shop-item .shop-name{font-weight:850}.shop-item .shop-desc{font-size:12px;color:var(--muted);line-height:1.35}.price-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.buy{background:var(--accent);color:#fff;padding:8px 10px;border-radius:12px;font-weight:800;font-size:12px}.owned{font-size:12px;color:var(--good);font-weight:800}.shop-note{font-size:12px;color:var(--muted);margin-top:11px;line-height:1.4}.pet-panel{display:flex;gap:12px;align-items:center;background:var(--panel-soft);border:1px solid var(--line);border-radius:17px;padding:12px;margin-top:12px}.pet-mini{font-size:44px}.theme-row{display:flex;gap:8px;flex-wrap:wrap}.theme-button{padding:9px 11px;border-radius:14px;border:1px solid var(--line);background:var(--bg2);font-weight:800;font-size:12px}.theme-button.active{outline:2px solid var(--accent)}
+
+.home-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.home-link{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 8px;font-size:12px;font-weight:800;text-align:center;box-shadow:0 5px 16px rgba(20,20,20,.035)}
+.boss-strip{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:11px 13px}.boss-strip .icon{font-size:25px}.boss-strip .meta{flex:1;min-width:0}.boss-strip .meta b{display:block;font-size:13px}.boss-strip .meta span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.lesson-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.lesson-card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:13px;display:grid;gap:9px}.lesson-card.active{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}.lesson-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.lesson-name{font-weight:850}.lesson-count{font-size:11px;color:var(--muted)}.lesson-bar{height:7px;background:var(--panel-soft);border-radius:999px;overflow:hidden}.lesson-bar span{display:block;height:100%;background:var(--accent);border-radius:999px}.lesson-actions{display:flex;gap:7px;flex-wrap:wrap}.lesson-actions button{font-size:11px;padding:7px 9px}
+.writer-wrap{width:min(310px,100%);margin:12px auto 0;background:rgba(255,255,255,.55);border:2px dashed var(--line);border-radius:24px;padding:6px;position:relative}.hanzi-writer-target{width:100%;height:285px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.writer-hint{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:9px}.writer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:7px}.writer-fallback{display:grid;gap:8px}.writer-fallback .write-canvas{height:auto}
+.pet-swatch{width:56px;height:56px;display:grid;place-items:center;border-radius:16px;background:var(--bg2);border:1px solid var(--line);overflow:hidden}.pet-swatch .pet{width:50px;height:50px}.pet-select-row{display:flex;gap:8px;overflow:auto;padding:2px 1px 3px}.pet-select{min-width:104px;background:var(--panel-soft);border:1px solid var(--line);border-radius:16px;padding:8px}.pet-select.active{outline:2px solid var(--accent)}.pet-select.locked{opacity:.72}.pet-select-name{font-size:11px;font-weight:800;margin-top:4px}.pet-select-price{font-size:10px;color:var(--muted);margin-top:2px}
+.theme-preview{height:54px;border-radius:16px;border:1px solid var(--line);position:relative;overflow:hidden;margin-bottom:7px;background:var(--bg2)}.theme-preview::after{content:"";position:absolute;inset:auto 9px 8px 9px;height:6px;border-radius:999px;background:var(--accent);opacity:.7}.theme-preview.night{background:radial-gradient(circle at 20% 25%,rgba(255,255,255,.6) 0 1px,transparent 2px),radial-gradient(circle at 72% 20%,rgba(255,255,255,.45) 0 1px,transparent 2px),linear-gradient(135deg,#152033,#253552)}.theme-preview.sakura{background:radial-gradient(circle at 18% 30%,rgba(201,127,143,.4) 0 5px,transparent 6px),radial-gradient(circle at 74% 20%,rgba(201,127,143,.35) 0 4px,transparent 5px),#fff5f6}.theme-preview.ink{background:radial-gradient(ellipse at 20% 35%,rgba(45,69,91,.12) 0 28px,transparent 29px),#f3efe7}
+@media(max-width:680px){.home-links{grid-template-columns:repeat(2,minmax(0,1fr))}.lesson-grid{grid-template-columns:1fr}.compact-grid{grid-template-columns:1fr}.hero{min-height:335px}.hanzi-writer-target{height:260px}.pet-wrap{width:108px;height:108px}.pet{width:90px;height:90px}}
+
+.settings-grid{display:grid;gap:10px}.danger{border-color:rgba(201,101,101,.35)!important;color:#9e4f4f!important}.diag{display:grid;gap:8px;margin-top:10px}.diag-row{display:flex;justify-content:space-between;gap:10px;background:var(--panel-soft);border-radius:13px;padding:9px 11px;font-size:12px}.ok{color:var(--good);font-weight:800}.no{color:var(--bad);font-weight:800}
+@media(max-width:680px){.compact-grid{grid-template-columns:1fr}.word-row{grid-template-columns:1fr 1fr}.word-row .meaning{grid-column:1/-1}.word-row .lesson{display:block}.mode-list{grid-template-columns:1fr 1fr}.shop-grid{grid-template-columns:1fr}.options{grid-template-columns:1fr}.hero{min-height:335px}}
+@media(max-width:430px){.mode-list{grid-template-columns:1fr}.stats{gap:6px}.pill{padding:8px 9px}.q-hanzi{font-size:64px}}
+
+/* v6 polish: smaller main screen + clearer character silhouettes */
+.hero-compact{min-height:220px;padding:12px 16px 11px;border-radius:22px;justify-content:center}
+.hero-compact .pet-wrap{width:104px;height:104px}.hero-compact .pet{width:88px;height:88px}
+.hero-compact .hero-title{font-size:22px}.hero-compact .primary.big{min-width:250px;padding:10px 14px;font-size:13px}.hero-compact .hero-sub{display:none}
+.compact-home-links .home-link{padding:8px 7px;font-size:11px}.memory-compact{padding:10px}.memory-compact .memory-bars{margin-top:6px}.memory-compact .mem{padding:7px 8px}.boss-strip-compact{padding:9px 11px}
+.empty-state-card{background:var(--panel);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:22px;display:grid;place-items:center;text-align:center;gap:9px}.empty-pet{height:95px;display:grid;place-items:center}.empty-pet .pet{width:84px;height:84px}
+.icon-btn{width:38px;height:38px;padding:0;display:grid;place-items:center}
+.import-preview{margin-top:10px;background:var(--panel-soft);border:1px solid var(--line);border-radius:15px;padding:10px 12px;font-size:12px;line-height:1.45}.import-preview.muted{color:var(--muted)}.preview-ok{color:var(--good);font-weight:750;margin-top:4px}.preview-warn{color:#9e6b28;font-weight:750;margin-top:5px}.preview-lessons{margin-top:4px;color:var(--muted)}.import-errors{margin-top:6px;color:#9e4f4f;font-size:11px}.pet-cat,.pet-panda,.pet-fox,.pet-bunny{filter:drop-shadow(0 11px 14px rgba(50,40,35,.12))}.pet--play{animation:play .9s ease both}.pet--bell{animation:bell .75s ease both}
+@keyframes play{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-7px) rotate(-5deg)}50%{transform:translateY(-13px) rotate(5deg)}75%{transform:translateY(-4px) rotate(-3deg)}100%{transform:none}}
+@keyframes bell{0%{transform:rotate(0)}25%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}75%{transform:rotate(-4deg)}100%{transform:none}}
+@media(max-width:680px){.hero-compact{min-height:225px}.hero-compact .pet-wrap{width:98px;height:98px}.hero-compact .pet{width:82px;height:82px}.hero-compact .home-links{margin-top:5px}.hero-compact .helper-note{font-size:10px}.hero-compact .hero-title{font-size:21px}}
+
+/* v7 stability + touch polish */
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{min-height:100dvh;overscroll-behavior-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#app{width:100%;overflow:visible}
+.shell{width:min(1020px,100%)}
+button,input,textarea,select{touch-action:manipulation}
+button{min-height:44px;-webkit-tap-highlight-color:transparent}
+.primary.big{min-height:50px;font-size:14px}
+.home-links .home-link{min-height:48px}
+.modal-backdrop{overscroll-behavior:contain}
+.modal{touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.question-card,.word-panel,.import-panel,.memory-card,.boss-head,.boss-lock,.mini-card,.mode-card,.lesson-card{overflow:visible}
+.writer-wrap{width:min(520px,100%);padding:4px;overflow:visible;margin:0 auto}
+.hanzi-writer-target{height:auto;min-height:0;display:block}
+.writer-stage{position:relative;width:min(500px,100%);aspect-ratio:1/1;margin:0 auto;border-radius:22px;overflow:hidden;background:rgba(255,255,255,.82);border:2px solid var(--line);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.writer-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.writer-guide{pointer-events:none;opacity:.98}
+.writer-ink{pointer-events:auto;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.local-writer-tools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.local-writer-status{margin-top:8px;text-align:center;color:var(--muted);font-size:12px;line-height:1.4;min-height:18px}
+.writer-hint.active{color:var(--accent);font-weight:800}
+.writer-mobile-note{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+.pet-home-stage{position:relative;width:116px;height:116px;display:grid;place-items:center;z-index:2}
+.pet-home-stage>.pet-button{position:relative}
+.pet-home-stage>.pet-toy-button{position:absolute;right:-8px;bottom:9px;background:var(--panel);border:1px solid var(--line);width:44px;height:44px;display:grid;place-items:center;border-radius:50%;box-shadow:0 7px 16px rgba(0,0,0,.08);z-index:4;padding:0}
+.pet-home-stage>.pet-toy-button .pet-toy{position:static;font-size:24px;animation:toyfloat 2.2s ease-in-out infinite}
+.theme-shop-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}
+.theme-shop-card{background:var(--panel-soft);border:1px solid var(--line);border-radius:16px;padding:10px;display:grid;gap:7px;min-width:0}
+.theme-shop-card .theme-name{font-weight:850;font-size:12px}
+.theme-shop-card .theme-desc{font-size:11px;color:var(--muted);line-height:1.35;min-height:31px}
+@media(max-width:680px){.shell{width:100%}.theme-shop-grid{grid-template-columns:1fr}.writer-wrap{width:100%;padding:0}.writer-stage{width:min(100%,430px);border-radius:20px}.pet-home-stage{width:108px;height:108px}}
+</style>
+</head>
+<body data-theme="default">
+<div id="app"></div>
+
+<div id="storeModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
+    <div class="modal-head"><h2 id="storeTitle">🛍️ Лавка питомца</h2><button class="close" data-close-modal>✕</button></div>
+    <div id="storeContent"></div>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head"><h2 id="settingsTitle">⚙️ Настройки</h2><button class="close" data-close-modal>✕</button></div>
+    <div id="settingsContent"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const APP_KEY='hanziQuestV8';
+const LEGACY_KEYS=['hanziQuestV7','hanziQuestV6','hanziQuestV5','hanziQuestV4','hanziQuestV3','hanziQuestV2'];
+const DATA_VERSION=8;
+
+const THEMES={
+  default:{id:'default',name:'Тихая библиотека',icon:'📚',price:0,desc:'Спокойный базовый интерфейс.'},
+  night:{id:'night',name:'Лунная ночь',icon:'🌙',price:280,desc:'Ночное небо, мягкие звёзды и прохладные акценты.'},
+  sakura:{id:'sakura',name:'Сакура',icon:'🌸',price:300,desc:'Светлый весенний фон и едва заметные лепестки.'},
+  ink:{id:'ink',name:'Чернила',icon:'🖌️',price:320,desc:'Бумажная атмосфера с тушевыми акцентами.'}
+};
+
+const PET_TYPES={
+  cat:{id:'cat',name:'Котёнок',icon:'🐱',price:0,desc:'Мягкий и любопытный.'},
+  panda:{id:'panda',name:'Панда',icon:'🐼',price:320,desc:'Спокойный и добрый.'},
+  fox:{id:'fox',name:'Лисёнок',icon:'🦊',price:360,desc:'Любит приключения.'},
+  bunny:{id:'bunny',name:'Кролик',icon:'🐰',price:400,desc:'Быстрый и весёлый.'}
+};
+
+const SHOP_POOL=[
+  {id:'shield',kind:'consumable',icon:'🛡️',name:'Щит ошибки',price:100,desc:'Следующая ошибка в обычной тренировке не сбросит Combo.'},
+  {id:'crystal',kind:'consumable',icon:'🎧',name:'Кристалл слуха',price:80,desc:'3 повтора аудио-заданий без штрафа.'},
+  {id:'scroll',kind:'consumable',icon:'📜',name:'Свиток мастера',price:120,desc:'Следующее письмо получит мягкую подсказку-эталон.'},
+  {id:'amulet',kind:'consumable',icon:'🪬',name:'Амулет босса',price:250,desc:'На боссе один раз можно восстановить ошибочное задание.'},
+  {id:'challenge',kind:'consumable',icon:'🗺️',name:'Карта испытания',price:150,desc:'10 специальных вопросов с повышенной наградой.'},
+  {id:'toy_ball',kind:'toy',icon:'⚽',name:'Мячик',price:150,desc:'Питомец учится играть с мячом. +1 дружба.'},
+  {id:'toy_bell',kind:'toy',icon:'🔔',name:'Колокольчик',price:160,desc:'Новая реакция питомца. +1 дружба.'},
+  {id:'toy_pillow',kind:'toy',icon:'🛏️',name:'Мягкая подушка',price:170,desc:'Питомец сможет отдыхать рядом с ней. +1 дружба.'},
+  {id:'theme_night',kind:'theme',theme:'night',icon:'🌙',name:'Тема «Лунная ночь»',price:280,desc:'Меняет атмосферу интерфейса, фон и декор.'},
+  {id:'theme_sakura',kind:'theme',theme:'sakura',icon:'🌸',name:'Тема «Сакура»',price:300,desc:'Меняет атмосферу интерфейса и добавляет лёгкий декор.'},
+  {id:'theme_ink',kind:'theme',theme:'ink',icon:'🖌️',name:'Тема «Чернила»',price:320,desc:'Бумажная тема с тушевыми акцентами.'}
+];
+
+const defaults={
+  version:DATA_VERSION,
+  words:[],
+  selectedLessons:[],
+  coins:120,
+  xp:0,
+  combo:0,
+  bestCombo:0,
+  progress:{},
+  inventory:{shield:0,crystal:0,scroll:0,amulet:0,challenge:0,bossTicket:0},
+  ownedThemes:['default'],
+  activeTheme:'default',
+  pet:{friendship:0,ownedToys:[],activeToy:null,ownedPets:['cat'],activePet:'cat'},
+  lastSeen:'',
+  settings:{speechRate:.82}
+};
+let state=loadState();
+let currentScreen='home';
+let currentSession=null;
+let currentQuestion=null;
+let canvas=null,ctx=null,drawing=false,hasInk=false;
+let bossSession=null;
+let pendingWritingHint=false;
+let lastBossRecommendations=[];
+let dictionaryLessonFilter=[];
+let importPreview={rows:0,parsed:0,errors:[],lessons:{},formatCounts:{}};
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function loadState(){
+  try{
+    let raw=localStorage.getItem(APP_KEY);
+    let sourceKey=APP_KEY;
+    if(!raw){for(const key of LEGACY_KEYS){raw=localStorage.getItem(key);if(raw){sourceKey=key;break}}}
+    if(!raw)return clone(defaults);
+    const parsed=JSON.parse(raw);
+    const normalized=normalizeState(parsed);
+    if(sourceKey!==APP_KEY){try{localStorage.setItem(APP_KEY,JSON.stringify(normalized))}catch(e){}}
+    return normalized;
+  }catch(e){return clone(defaults)}
+}
+function normalizeState(s){
+  const out=clone(defaults);
+  if(!s || typeof s!=='object') return out;
+  out.version=DATA_VERSION;
+  out.words=Array.isArray(s.words)?s.words.map(normalizeWord).filter(w=>w.hanzi&&w.pinyin&&w.meaning&&looksLikeHanzi(w.hanzi)&&looksLikePinyin(w.pinyin)):[];
+  out.selectedLessons=Array.isArray(s.selectedLessons)?s.selectedLessons.map(String):[];
+  out.coins=num(s.coins,120); out.xp=num(s.xp,0); out.combo=num(s.combo,0); out.bestCombo=num(s.bestCombo,0);
+  out.progress=(s.progress&&typeof s.progress==='object')?s.progress:{};
+  out.inventory={...out.inventory,...(s.inventory||{})};
+  for(const k of ['shield','crystal','scroll','amulet','challenge','bossTicket'])out.inventory[k]=Math.max(0,Math.floor(num(out.inventory[k],0)));
+  out.ownedThemes=Array.isArray(s.ownedThemes)&&s.ownedThemes.length?s.ownedThemes:['default'];
+  out.activeTheme=THEMES[s.activeTheme]?s.activeTheme:'default';
+  out.pet={...out.pet,...(s.pet||{})};
+  out.pet.friendship=Math.max(0,Math.floor(num(out.pet.friendship,0)));
+  out.pet.ownedToys=Array.isArray(out.pet.ownedToys)?out.pet.ownedToys:[];
+  out.pet.ownedPets=Array.isArray(out.pet.ownedPets)&&out.pet.ownedPets.length?out.pet.ownedPets:['cat'];
+  out.pet.activePet=out.pet.ownedPets.includes(out.pet.activePet)?out.pet.activePet:'cat';
+  out.settings={...out.settings,...(s.settings||{})};
+  return out;
+}
+function normalizeWord(w){
+  const rawLessons=Array.isArray(w?.lessons)?w.lessons:(w?.lesson?[String(w.lesson)]:[]);
+  const lessons=[...new Set(rawLessons.flatMap(v=>String(v??'').split(/\s*\|\s*/).map(x=>x.trim()).filter(Boolean)))];
+  return {
+    id:String(w?.id||hashId(`${w?.hanzi||''}|${w?.pinyin||''}`)),
+    hanzi:String(w?.hanzi||'').trim(),
+    pinyin:String(w?.pinyin||'').trim(),
+    meaning:String(w?.meaning||'').trim(),
+    sentence:String(w?.sentence||'').trim(),
+    sentenceRu:String(w?.sentenceRu||'').trim(),
+    lessons,
+    lesson:lessons[0]||''
+  };
+}
+function num(v,f){return Number.isFinite(Number(v))?Number(v):f}
+function save(){try{localStorage.setItem(APP_KEY,JSON.stringify(state))}catch(e){} applyTheme(); render();}
+function hashId(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+function esc(v){return String(v??'').replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
+function localDay(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function seeded(n){let x=Math.sin(n)*10000;return x-Math.floor(x)}
+function hashNum(str){let h=0;for(let i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))|0;return Math.abs(h)}
+function shuffle(arr,seedStr=''){let a=arr.slice(), seed=hashNum(seedStr)||1;for(let i=a.length-1;i>0;i--){seed=(seed*1664525+1013904223)>>>0;const j=seed%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function applyTheme(){document.body.dataset.theme=state.activeTheme||'default'}
+function getWord(id){return state.words.find(w=>w.id===id)}
+function wordLessons(w){
+  if(Array.isArray(w.lessons))return w.lessons.filter(Boolean);
+  return w.lesson?[w.lesson]:[];
+}
+function lessonNames(){
+  const set=new Set();
+  state.words.forEach(w=>wordLessons(w).forEach(l=>set.add(l)));
+  if(state.words.some(w=>!wordLessons(w).length))set.add('Без урока');
+  return [...set].sort((a,b)=>a.localeCompare(b,'ru',{numeric:true}));
+}
+function wordHasLesson(w,lesson){return lesson==='Без урока'?!wordLessons(w).length:wordLessons(w).includes(lesson)}
+function filteredWords(){
+  if(!state.selectedLessons.length) return state.words.slice();
+  return state.words.filter(w=>{
+    const ls=wordLessons(w);
+    return state.selectedLessons.some(l=>l==='Без урока'?!ls.length:ls.includes(l));
+  });
+}
+function ensureProgress(w){
+  if(!state.progress[w.id]) state.progress[w.id]={meaning:0,pinyin:0,listening:0,writing:0,context:0,attempts:0,errors:0,last:0};
+  return state.progress[w.id];
+}
+function skillName(s){return ({meaning:'значение',pinyin:'пиньинь',listening:'аудирование',writing:'написание',context:'контекст',hanzi:'иероглиф'})[s]||s}
+function eligibleSkills(w){
+  const arr=['meaning','pinyin','listening','writing'];
+  if(w.sentence) arr.push('context');
+  return arr;
+}
+function wordMastery(w){
+  const p=ensureProgress(w);
+  const skills=eligibleSkills(w);
+  const vals=skills.map(s=>p[s]||0);
+  return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0;
+}
+function allMastered(words=filteredWords()){
+  if(!words.length) return false;
+  return words.every(w=>{const p=ensureProgress(w);const skills=eligibleSkills(w);return wordMastery(w)>=80 && skills.every(s=>(p[s]||0)>=60)});
+}
+function remainingMastered(words=filteredWords()){
+  return words.filter(w=>!allMastered([w]));
+}
+function skillWeakness(w){
+  const p=ensureProgress(w);return ['meaning','pinyin','listening','writing','context'].sort((a,b)=>p[a]-p[b])}
+function chooseWordSkill(words=filteredWords(),preferred=null){
+  if(!words.length) return null;
+  const pool=words.slice();
+  const ranked=pool.sort((a,b)=>wordMastery(a)-wordMastery(b));
+  const w=ranked[Math.floor(Math.random()*Math.min(3,ranked.length))];
+  let skill=preferred||skillWeakness(w)[0];
+  if(!eligibleSkills(w).includes(skill)) skill=eligibleSkills(w)[0];
+  return {word:w,skill};
+}
+function optionsFor(skill,correct,count=4){
+  const source=state.words.filter(w=>w.id!==correct.id);
+  const pool=shuffle(source,correct.id+'|'+skill+'|'+localDay());
+  const label=w=>{
+    if(skill==='meaning') return w.meaning||'—';
+    if(skill==='pinyin') return w.pinyin||'—';
+    return w.hanzi||'—';
+  };
+  const out=[{id:correct.id,label:label(correct),correct:true}];
+  for(const w of pool){
+    if(out.length>=Math.min(count,source.length+1))break;
+    const lbl=label(w);if(lbl&&lbl!==label(correct)&&!out.some(x=>x.label===lbl))out.push({id:w.id,label:lbl,correct:false});
+  }
+  return shuffle(out,correct.id+'|opts|'+skill+'|'+localDay());
+}
+function reward(correct,{boss=false,challenge=false}={}){
+  if(boss) return {coins:0,xp:correct?5:0};
+  const mult=challenge?2:1;
+  if(correct){
+    const coins=3*mult, xp=5*mult;
+    state.coins+=coins; state.xp+=xp; state.combo+=1; state.bestCombo=Math.max(state.bestCombo,state.combo);
+    return {coins,xp};
+  }
+  if(state.inventory.shield>0 && !challenge){state.inventory.shield--;return {coins:0,xp:0,shieldUsed:true};}
+  state.combo=0; state.coins=Math.max(0,state.coins-1);
+  return {coins:-1,xp:0};
+}
+function updateProgress(w,skill,correct){
+  const p=ensureProgress(w);p.attempts++;p.last=Date.now();
+  const key=skill==='hanzi'?'writing':skill;
+  p[key]=Math.max(0,Math.min(100,p[key]+(correct?18:-7)));
+  if(!correct)p.errors++;
+}
+
+function petLevel(){return Math.floor(state.pet.friendship/3)+1}
+function petAccessory(){const lvl=petLevel();if(lvl>=7)return '👑';if(lvl>=5)return '🎀';if(lvl>=3)return '🌟';return ''}
+function petToyEmoji(){const id=state.pet.activeToy;if(id==='toy_ball')return '⚽';if(id==='toy_bell')return '🔔';if(id==='toy_pillow')return '🛏️';return ''}
+function petReact(type='happy'){
+  const el=document.querySelector('.pet');if(!el)return;
+  const classes=['pet--happy','pet--sad','pet--celebrate','pet--sleep','pet--shop','pet--play','pet--bell'];
+  el.classList.remove(...classes);void el.offsetWidth;el.classList.add('pet--'+type);
+  setTimeout(()=>el.classList.remove('pet--'+type),1150);
+}
+function petToyReact(){const id=state.pet.activeToy;if(id==='toy_ball')petReact('play');else if(id==='toy_bell')petReact('bell');else if(id==='toy_pillow')petReact('sleep');else petReact('happy');toast(id?'Питомец играет с игрушкой 🐾':'Сначала выбери игрушку в лавке');}
+function petSvg(type=state.pet.activePet){
+  const pets={
+    cat:`<svg class="pet pet-cat" viewBox="0 0 220 220" aria-label="Котёнок" role="img">
+      <path class="pet-tail" d="M48 151 C18 160 20 201 62 188" fill="none" stroke="#b87558" stroke-width="16" stroke-linecap="round"/>
+      <path d="M63 69 L68 31 Q70 16 83 26 L99 45 Q110 42 121 45 L137 26 Q150 16 152 31 L157 69" fill="#e6ae85" stroke="#805844" stroke-width="6" stroke-linejoin="round"/>
+      <ellipse cx="110" cy="110" rx="70" ry="64" fill="#f0c6a3" stroke="#805844" stroke-width="6"/>
+      <path d="M68 134 Q110 154 152 134 Q147 181 110 187 Q73 181 68 134Z" fill="#e5ad82" stroke="#805844" stroke-width="6"/>
+      <ellipse cx="84" cy="106" rx="8" ry="10" fill="#2f3038"/><ellipse cx="136" cy="106" rx="8" ry="10" fill="#2f3038"/>
+      <circle cx="86" cy="103" r="2.4" fill="#fff"/><circle cx="138" cy="103" r="2.4" fill="#fff"/>
+      <path d="M103 120 Q110 127 117 120" fill="none" stroke="#67453e" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="78" cy="124" r="6" fill="#ef9aa0" opacity=".42"/><circle cx="142" cy="124" r="6" fill="#ef9aa0" opacity=".42"/>
+      <path d="M79 117 L49 112 M79 124 L48 126 M141 117 L171 112 M141 124 L172 126" stroke="#805844" stroke-width="3" stroke-linecap="round"/>
+      <path d="M82 163 Q72 177 87 183" fill="#f0c6a3" stroke="#805844" stroke-width="5"/><path d="M138 163 Q148 177 133 183" fill="#f0c6a3" stroke="#805844" stroke-width="5"/>
+      <path d="M95 158 Q110 166 125 158" fill="none" stroke="#b36f56" stroke-width="4" stroke-linecap="round"/>
+    </svg>`,
+    panda:`<svg class="pet pet-panda" viewBox="0 0 220 220" aria-label="Панда" role="img">
+      <circle cx="68" cy="55" r="24" fill="#282b32"/><circle cx="152" cy="55" r="24" fill="#282b32"/>
+      <ellipse cx="110" cy="111" rx="72" ry="66" fill="#faf9f5" stroke="#343840" stroke-width="6"/>
+      <ellipse cx="83" cy="108" rx="22" ry="30" transform="rotate(25 83 108)" fill="#30333a"/><ellipse cx="137" cy="108" rx="22" ry="30" transform="rotate(-25 137 108)" fill="#30333a"/>
+      <ellipse cx="88" cy="110" rx="6.5" ry="8" fill="#fff"/><ellipse cx="132" cy="110" rx="6.5" ry="8" fill="#fff"/>
+      <circle cx="88" cy="111" r="3.5" fill="#25272d"/><circle cx="132" cy="111" r="3.5" fill="#25272d"/>
+      <ellipse cx="110" cy="130" rx="11" ry="8" fill="#25272d"/><path d="M100 141 Q110 149 120 141" fill="none" stroke="#25272d" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M78 157 Q110 176 142 157 Q137 190 110 194 Q83 190 78 157Z" fill="#faf9f5" stroke="#343840" stroke-width="6"/>
+      <path d="M76 158 Q55 166 62 184 Q69 191 84 178" fill="#30333a" stroke="#25272d" stroke-width="5"/><path d="M144 158 Q165 166 158 184 Q151 191 136 178" fill="#30333a" stroke="#25272d" stroke-width="5"/>
+      <path d="M93 167 Q110 174 127 167" fill="none" stroke="#6a9869" stroke-width="7" stroke-linecap="round"/>
+    </svg>`,
+    fox:`<svg class="pet pet-fox" viewBox="0 0 220 220" aria-label="Лисёнок" role="img">
+      <path class="pet-tail fox-tail" d="M164 158 C196 151 204 183 176 191 C163 194 154 187 150 179" fill="#d87a48" stroke="#704936" stroke-width="6"/>
+      <path d="M62 73 L66 28 Q68 13 83 27 L101 47 Q110 44 119 47 L137 27 Q152 13 154 28 L158 73" fill="#d67a47" stroke="#704936" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M58 82 Q110 48 162 82 L153 139 Q145 176 110 181 Q75 176 67 139Z" fill="#e89a61" stroke="#704936" stroke-width="6"/>
+      <path d="M72 133 Q110 110 148 133 Q142 169 110 176 Q78 169 72 133Z" fill="#fff4e8"/>
+      <ellipse cx="84" cy="105" rx="8" ry="10" fill="#2f2b2b"/><ellipse cx="136" cy="105" rx="8" ry="10" fill="#2f2b2b"/>
+      <circle cx="86" cy="102" r="2.5" fill="#fff"/><circle cx="138" cy="102" r="2.5" fill="#fff"/>
+      <path d="M103 121 Q110 128 117 121" fill="none" stroke="#68453b" stroke-width="5" stroke-linecap="round"/>
+      <path d="M74 161 Q110 180 146 161 Q141 193 110 197 Q79 193 74 161Z" fill="#df884f" stroke="#704936" stroke-width="6"/>
+      <path d="M79 163 Q60 172 66 186 Q72 193 87 180" fill="#e89a61" stroke="#704936" stroke-width="5"/><path d="M141 163 Q160 172 154 186 Q148 193 133 180" fill="#e89a61" stroke="#704936" stroke-width="5"/>
+      <path d="M95 175 Q110 181 125 175" fill="none" stroke="#f3c58b" stroke-width="4" stroke-linecap="round"/>
+    </svg>`,
+    bunny:`<svg class="pet pet-bunny" viewBox="0 0 220 220" aria-label="Кролик" role="img">
+      <path d="M78 80 Q58 53 61 22 Q63 9 75 18 Q94 34 94 71" fill="#f0d2dc" stroke="#986d7e" stroke-width="6"/>
+      <path d="M126 71 Q126 34 145 18 Q157 9 159 22 Q162 53 142 80" fill="#f0d2dc" stroke="#986d7e" stroke-width="6"/>
+      <ellipse cx="110" cy="112" rx="72" ry="66" fill="#f7e4ea" stroke="#986d7e" stroke-width="6"/>
+      <ellipse cx="84" cy="108" rx="8" ry="10" fill="#3f3440"/><ellipse cx="136" cy="108" rx="8" ry="10" fill="#3f3440"/>
+      <circle cx="86" cy="105" r="2.4" fill="#fff"/><circle cx="138" cy="105" r="2.4" fill="#fff"/>
+      <ellipse cx="110" cy="127" rx="9" ry="7" fill="#a86579"/><path d="M101 138 Q110 146 119 138" fill="none" stroke="#80586a" stroke-width="4.5" stroke-linecap="round"/>
+      <circle cx="78" cy="125" r="6" fill="#ef9fb2" opacity=".45"/><circle cx="142" cy="125" r="6" fill="#ef9fb2" opacity=".45"/>
+      <path d="M77 164 Q110 181 143 164 Q138 194 110 198 Q82 194 77 164Z" fill="#f0d2dc" stroke="#986d7e" stroke-width="6"/>
+      <path d="M81 167 Q61 175 68 189 Q75 195 90 182" fill="#f7dfe7" stroke="#986d7e" stroke-width="5"/><path d="M139 167 Q159 175 152 189 Q145 195 130 182" fill="#f7dfe7" stroke="#986d7e" stroke-width="5"/>
+      <path d="M99 176 Q110 182 121 176" fill="none" stroke="#d798a9" stroke-width="4" stroke-linecap="round"/>
+    </svg>`
+  };
+  return pets[type]||pets.cat;
+}
+function getShopItems(){
+  const day=localDay();
+  const eligible=SHOP_POOL.filter(i=>{
+    if(i.kind==='theme')return false;
+    if(i.kind==='toy' && state.pet.ownedToys.includes(i.id))return false;
+    return true;
+  });
+  const rotating=shuffle(eligible,day+'|shelf').slice(0,5);
+  const ticket={id:'boss_ticket',kind:'ticket',icon:'🎟️',name:'Boss Ticket',price:300,desc:'Особый билет. Нужен вместе с полным изучением выбранного набора.'};
+  return [...rotating,ticket];
+}
+function buyItem(id){
+  const all=[...SHOP_POOL,{id:'boss_ticket',kind:'ticket',icon:'🎟️',name:'Boss Ticket',price:300,desc:'Особый билет для босса.'}];
+  const item=all.find(i=>i.id===id);if(!item)return;
+  if(state.coins<item.price){toast('Недостаточно монет 🪙');return}
+  if(item.kind==='theme' && state.ownedThemes.includes(item.theme)){toast('Эта тема уже куплена');return}
+  if(item.kind==='toy' && state.pet.ownedToys.includes(item.id)){toast('Эта игрушка уже у питомца');return}
+  state.coins-=item.price;
+  if(item.kind==='theme'){
+    state.ownedThemes=[...new Set([...state.ownedThemes,item.theme])];state.activeTheme=item.theme;
+    toast(`Открыта тема: ${item.name}`);petReact('happy');
+  }else if(item.kind==='toy'){
+    state.pet.ownedToys=[...new Set([...state.pet.ownedToys,item.id])];state.pet.activeToy=item.id;state.pet.friendship+=1;
+    toast(`Питомец получил ${item.name}! +1 дружба`);petReact('celebrate');
+  }else if(item.kind==='ticket'){
+    state.inventory.bossTicket=(state.inventory.bossTicket||0)+1;toast('Boss Ticket куплен');
+  }else{
+    state.inventory[item.id]=(state.inventory[item.id]||0)+1;toast(`Куплено: ${item.name}`);
+  }
+  save();openStore();
+}
+function buyPetOrSelect(id){
+  const pet=PET_TYPES[id]; if(!pet) return;
+  if(state.pet.ownedPets.includes(id)){state.pet.activePet=id;save();renderStore();petReact('happy');return;}
+  if(state.coins<pet.price){toast('Недостаточно монет 🪙');return;}
+  state.coins-=pet.price;state.pet.ownedPets.push(id);state.pet.activePet=id;toast(`Питомец выбран: ${pet.name}`);save();renderStore();petReact('celebrate');
+}
+
+function toast(msg){const el=document.createElement('div');el.textContent=msg;Object.assign(el.style,{position:'fixed',left:'50%',bottom:'24px',transform:'translateX(-50%)',background:'rgba(30,30,35,.92)',color:'#fff',padding:'11px 15px',borderRadius:'14px',fontWeight:'750',fontSize:'13px',zIndex:100,boxShadow:'0 12px 30px rgba(0,0,0,.25)'});document.body.appendChild(el);setTimeout(()=>el.remove(),1900)}
+
+function render(){
+  applyTheme();
+  if(currentScreen==='home') renderHome();
+  else if(currentScreen==='library') renderLibrary();
+  else if(currentScreen==='lessons') renderLessons();
+  else if(currentScreen==='modes') renderModes();
+  else if(currentScreen==='session') renderSession();
+  else if(currentScreen==='boss') renderBossScreen();
+  renderStats();
+}
+function renderStats(){
+  const el=document.querySelector('.stats'); if(!el)return;
+  const level=Math.floor(state.xp/200)+1, next=level*200, need=Math.max(0,next-state.xp);
+  el.innerHTML=`<div class="pill">Lv <strong>${level}</strong></div><div class="pill">🪙 <strong>${state.coins}</strong></div><div class="pill">🔥 <strong>${state.combo}</strong></div>`;
+}
+function shell(content){return `<div class="shell"><div class="topbar"><div class="brand">汉字 Quest <span class="mini-muted" style="font-size:10px">v8</span></div><div class="stats"></div></div>${content}</div>`}
+function renderHome(){
+  const root=document.getElementById('app');
+  if(!state.words.length){
+    root.innerHTML=shell(`<div class="screen active"><div class="empty-state-card"><div class="empty-pet">${petSvg()}</div><h2>Начнём с твоего словаря</h2><div class="subtle">Загрузи TXT/CSV или вставь список. Программа покажет, сколько строк она распознала, прежде чем добавить их.</div><button class="primary" data-nav="library">📚 Открыть словарь</button></div></div>`);renderStats();return;
+  }
+  const words=filteredWords();
+  const weak=words.filter(w=>wordMastery(w)<60).length,mid=words.filter(w=>wordMastery(w)>=60&&wordMastery(w)<80).length,good=words.filter(w=>wordMastery(w)>=80).length;
+  const mastered=allMastered(words),ticket=state.inventory.bossTicket||0,bossReady=mastered&&ticket>0;
+  const lessonLabel=state.selectedLessons.length?state.selectedLessons.join(', '):'Все уроки';
+  const themeIcon=THEMES[state.activeTheme]?.icon||'📚';
+  root.innerHTML=shell(`<div class="screen active home">
+    <section class="hero hero-compact">
+      <div class="hero-top"><button class="lesson-shortcut" data-nav="lessons">🎯 ${esc(lessonLabel)}</button><button class="ghost icon-btn" data-action="settings">⚙️</button></div>
+      <div class="pet-home-stage"><button class="pet-button" data-action="store" aria-label="Открыть магазин"><div class="pet-wrap">${petSvg()}${petAccessory()?`<div class="pet-accessory">${petAccessory()}</div>`:''}</div></button>${petToyEmoji()?`<button class="pet-toy-button" data-action="toyReact" aria-label="Играть с игрушкой"><span class="pet-toy">${petToyEmoji()}</span></button>`:''}</div>
+      <div class="helper-note">${themeIcon} ${esc(THEMES[state.activeTheme]?.name||'Тихая библиотека')} · нажми на питомца для лавки</div>
+      <div class="hero-title">Продолжим учиться?</div>
+      <button class="primary big" data-action="continue">▶ Продолжить обучение</button>
+      <div class="home-links compact-home-links" style="width:min(500px,100%);margin-top:7px"><button class="home-link" data-nav="lessons">🎯 Уроки</button><button class="home-link" data-nav="modes">🎮 Режимы</button><button class="home-link" data-nav="library">📚 Словарь</button></div>
+    </section>
+    <section class="memory-card memory-compact"><div class="memory-head"><strong>Память</strong><span class="subtle">${words.length} слов</span></div><div class="memory-bars"><div class="mem good"><span>🟢</span><b>${good}</b></div><div class="mem warn"><span>🟡</span><b>${mid}</b></div><div class="mem bad"><span>🔴</span><b>${weak}</b></div></div></section>
+    <section class="boss-strip boss-strip-compact"><div class="icon">👑</div><div class="meta"><b>Босс</b><span>${bossReady?'Готов · 50 заданий':`Все слова: ${mastered?'✓':'ещё нет'} · билет: ${ticket?'✓':'300 🪙'}`}</span></div><button class="secondary" data-nav="boss">${bossReady?'Войти':'Условия'}</button></section>
+  </div>`);renderStats();
+}
+function renderModes(){
+  const root=document.getElementById('app');const cards=[
+    ['meaning','🧠','Значение','Выбери точный перевод.'],['pinyin','🔤','Пиньинь','Выбери правильное чтение.'],['listening','🎧','Аудирование','Услышь слово и выбери иероглиф.'],['writing','✍️','Написание','Напиши иероглиф рукой.'],['context','🧩','Контекст','Вставь слово в предложение.'],['quest','🗺️','Квест','Смешанная серия на основе слабых мест.']
+  ];
+  root.innerHTML=shell(`<div class="screen active"><div class="page-head"><button class="back" data-nav="home">←</button><div><h1>🎮 Все режимы</h1><div class="subtle">Любой режим обновляет одну общую память.</div></div></div><div class="mode-list">${cards.map(c=>`<button class="mode-card" data-mode="${c[0]}"><div class="icon">${c[1]}</div><div><div class="name">${c[2]}</div><div class="desc">${c[3]}</div></div></button>`).join('')}</div><div class="mini-card" style="margin-top:12px"><div class="mini-title">📚 Серия — 10 заданий</div><div class="mini-muted" style="margin-top:5px">Сначала проходят разные слова, затем — повторения только после того, как весь набор пройден.</div></div><div class="mini-card" style="margin-top:12px"><div class="mini-title">🗺️ Карта испытания</div><div class="mini-muted" style="margin-top:5px">Если купишь её в лавке, получишь отдельное 10-вопросное испытание с повышенной наградой.</div></div></div>`);renderStats();
+}
+function renderLessons(){
+  const root=document.getElementById('app');const lessons=lessonNames();
+  const cards=lessons.map(l=>{const words=state.words.filter(w=>wordHasLesson(w,l));const mastered=words.filter(w=>wordMastery(w)>=80).length;const pct=words.length?Math.round(mastered/words.length*100):0;const active=state.selectedLessons.includes(l);return `<div class="lesson-card ${active?'active':''}"><div class="lesson-top"><div><div class="lesson-name">${esc(l)}</div><div class="lesson-count">${words.length} слов · ${mastered} хорошо выучено</div></div><div class="pill">${pct}%</div></div><div class="lesson-bar"><span style="width:${pct}%"></span></div><div class="lesson-actions"><button class="secondary" data-lesson="${esc(l)}">${active?'Убрать':'Добавить'}</button><button class="ghost" data-lesson-only="${esc(l)}">Только этот урок</button></div></div>`}).join('');
+  root.innerHTML=shell(`<div class="screen active library"><div class="page-head"><button class="back" data-nav="home">←</button><div><h1>🎯 Уроки</h1><div class="subtle">Это выбор набора для тренировок. Память слов остаётся общей.</div></div></div><div class="word-panel"><div class="mini-row"><div><div class="mini-title">Текущий набор</div><div class="mini-muted">${state.selectedLessons.length?state.selectedLessons.map(esc).join(', '):'Все уроки'}</div></div><button class="secondary" data-lesson-all>Все уроки</button></div></div><div class="lesson-grid">${cards||'<div class="empty">После импорта с уроками они появятся здесь.</div>'}</div></div>`);renderStats();
+}
+
+function dictionaryFilteredWords(){
+  if(!dictionaryLessonFilter.length)return state.words.slice();
+  return state.words.filter(w=>dictionaryLessonFilter.some(l=>wordHasLesson(w,l)));
+}
+function formatImportReport(){
+  const lessonPart=Object.entries(importPreview.lessons).map(([k,v])=>`${k}: ${v}`).join(' · ');
+  const errorPart=importPreview.errors.length?`<div class="import-errors">${importPreview.errors.slice(0,6).map(esc).map(x=>`<div>• ${x}</div>`).join('')}</div>`:'';
+  if(!importPreview.rows&&!importPreview.parsed)return '<div class="import-preview muted">Вставь список или выбери файл — здесь появится точный отчёт по строкам.</div>';
+  const formats=Object.entries(importPreview.formatCounts).map(([k,v])=>`${k}: ${v}`).join(' · ');
+  return `<div class="import-preview"><b>Распознано:</b> ${importPreview.parsed} слов из ${importPreview.rows} строк${Object.keys(importPreview.lessons).length?` · <b>уроков:</b> ${Object.keys(importPreview.lessons).length}`:''}${lessonPart?`<div class="preview-lessons">${esc(lessonPart)}</div>`:''}${formats?`<div class="preview-lessons">Форматы: ${esc(formats)}</div>`:''}${importPreview.errors.length?`<div class="preview-warn">⚠️ Не распознано: ${importPreview.errors.length}</div>${errorPart}`:'<div class="preview-ok">✓ Все непустые строки распознаны.</div>'}</div>`;
+}
+function updateImportPreview(){
+  const box=document.getElementById('importPreviewBox');if(box)box.innerHTML=formatImportReport();
+}
+function renderLibrary(){
+  const root=document.getElementById('app');const lessons=lessonNames();const words=dictionaryFilteredWords();
+  root.innerHTML=shell(`<div class="screen active library"><div class="page-head"><button class="back" data-nav="home">←</button><div><h1>📚 Словарь</h1><div class="subtle">Здесь показываются все загруженные слова. Фильтр словаря не меняет набор для тренировок.</div></div></div>
+    <div class="import-panel"><div class="mini-title">Импорт TXT / CSV</div><div class="import-hint">Поддерживаются <b>| ; , tab</b>, кавычки CSV, строки «Урок 1», «Lesson 2», «第3课», таблицы с заголовками и простой формат «汉字 — pinyin — перевод». Можно загружать UTF-8 и текстовые файлы в Windows-1251.</div><textarea id="importText" placeholder="Урок 1\n设施 | shèshī | интерьер\n环境 | huánjìng | окружение\n\nУрок 2\n方便 | fāngbiàn | удобство"></textarea><div class="file-row"><label class="file-label">📎 Выбрать TXT/CSV<input id="fileInput" type="file" accept=".txt,.csv,text/plain,text/csv"></label><button class="primary" data-action="importText">Добавить распознанные</button><button class="ghost" data-action="backupExport">Скачать резервную копию</button><label class="file-label">♻️ Восстановить<input id="backupInput" type="file" accept="application/json,.json"></label></div><div id="importPreviewBox">${formatImportReport()}</div></div>
+    <div class="word-panel"><div class="mini-row"><div><div class="mini-title">Уроки для тренировок</div><div class="mini-muted">${state.selectedLessons.length?state.selectedLessons.map(esc).join(', '):'Все уроки'}</div></div><button class="secondary" data-nav="lessons">🎯 Настроить</button></div></div>
+    <div class="word-panel"><div class="mini-row"><div><div class="mini-title">Все слова · ${words.length}</div><div class="mini-muted">${words.length===state.words.length?'Показываются все загруженные слова.':'Сейчас включён только фильтр просмотра.'}</div></div><button class="ghost danger" data-action="clearWords">Очистить словарь</button></div>
+      <div class="filters"><button class="lesson-chip ${!dictionaryLessonFilter.length?'active':''}" data-dict-lesson="__all">Все</button>${lessons.map(l=>`<button class="lesson-chip ${dictionaryLessonFilter.includes(l)?'active':''}" data-dict-lesson="${esc(l)}">${esc(l)}</button>`).join('')}</div>
+      <div class="word-list" style="margin-top:10px">${words.length?words.map(w=>{const p=ensureProgress(w);const ls=wordLessons(w);return `<div class="word-row"><div class="hanzi">${esc(w.hanzi)}</div><div class="pinyin">${esc(w.pinyin)}</div><div class="meaning">${esc(w.meaning)}${w.sentence?`<br><span>${esc(w.sentence)}</span>`:''}</div><div class="lesson">${esc(ls.length?ls.join(', '):'Без урока')}<br>${wordMastery(w)}%</div></div>`}).join(''):`<div class="empty">После импорта здесь появятся слова.</div>`}</div></div>
+  </div>`);renderStats();
+  const fileInput=document.getElementById('fileInput');if(fileInput)fileInput.addEventListener('change',handleFileInput);
+  const backup=document.getElementById('backupInput');if(backup)backup.addEventListener('change',handleBackupInput);
+}
+function renderSession(){
+  const root=document.getElementById('app');
+  if(!currentSession){currentScreen='home';renderHome();return}
+  const total=currentSession.questions.length;const i=currentSession.index;const pct=Math.min(100,Math.round(i/total*100));
+  let body='';
+  if(i>=total){body=renderSessionResultHtml(currentSession);}
+  else if(currentQuestion){body=renderQuestionHtml(currentQuestion,currentSession)}
+  else body='<div class="question-card"><div class="empty">Подготавливаем задание…</div></div>';
+  root.innerHTML=shell(`<div class="screen active session-shell"><div class="session-top"><button class="back" data-action="leaveSession">←</button><div style="flex:1"><div class="progress-line"><span style="width:${pct}%"></span></div></div><div class="subtle">${Math.min(i+1,total)}/${total}</div></div>${body}</div>`);renderStats();
+  if(currentQuestion?.skill==='writing' && i<total) setupWriting(currentQuestion.word,false);
+}
+function renderQuestionHtml(q,s){
+  const w=q.word;
+  if(q.skill==='writing'){
+    pendingWritingHint=!!q.extraHint;
+    return `<div class="question-card writing-card"><div class="question-note">✍️ Написание · иероглиф по значению</div><div class="prompt">Напиши иероглиф</div><div class="writing-target-info"><div class="writing-meaning"><b>Значение:</b> ${esc(w.meaning)}</div>${w.pinyin?`<div class="subtle" style="margin-top:5px">Пиньинь: ${esc(w.pinyin)}</div>`:''}${w.sentence?`<div class="writer-note" style="margin-top:8px"><b>Пример:</b> ${esc(w.sentence)}</div>`:''}</div><div class="writer-wrap"><div id="hanziWriter" class="hanzi-writer-target"></div></div><div class="writer-note">Сначала попробуй без подсказки. Стилус Apple Pencil и палец рисуют прямо в поле.</div><div id="writeFeedback"></div></div>`;
+  }
+  let questionTop='';
+  if(q.skill==='listening') questionTop=`<div class="audio-question"><div class="audio-orb">🎧</div><button class="primary" style="margin:12px auto 6px;display:block" data-action="speak">🔊 Прослушать</button>${q.audioRetried?'<div class="writer-note">Ещё раз послушай слово и выбери иероглиф.</div>':''}</div>`;
+  else if(q.skill==='context') questionTop=`<div class="prompt context-prompt"><div style="font-size:12px;color:var(--muted);margin-bottom:7px">Вставь подходящее слово в предложение</div>${esc(contextText(w))}</div>`;
+  else if(q.skill==='pinyin') questionTop=`<div class="q-hanzi">${esc(w.hanzi)}</div>`;
+  else if(q.skill==='meaning') questionTop=`<div class="q-hanzi">${esc(w.hanzi)}</div>`;
+  const opts=optionsFor(q.skill==='context'?'context':q.skill,w,4);
+  const prompt=q.skill==='meaning'?'Как переводится это слово?':q.skill==='pinyin'?'Как читается этот иероглиф?':q.skill==='listening'?'Какое слово прозвучало?':q.skill==='context'?'Какой иероглиф вставить вместо пропуска?':'';
+  const retry=q.skill==='listening'&&q.audioRetried?'<button class="secondary" data-action="retryAudio">🔊 Повторить</button>':'';
+  return `<div class="question-card"><div class="question-note">${esc(skillName(q.skill))}</div><div class="question-main">${questionTop}</div><div class="prompt">${prompt}</div><div class="options">${opts.map((o,idx)=>`<button class="option" data-answer-index="${idx}" data-answer-id="${esc(o.id)}">${esc(o.label)}</button>`).join('')}</div>${retry}<div id="questionFeedback">${q.feedback||''}</div></div>`;
+}
+
+function contextText(w){let s=w.sentence||'';if(!s)return '';s=s.replace(/\{\{.*?\}\}|___+|＿+|（ ）|\( \)/g,'______');if(s===w.sentence){const before=s;s=s.replace(w.hanzi,'______');if(s===before)s=`______ · ${before}`;}return s}
+function skillCycleForWords(words){
+  const base=['meaning','pinyin','listening','writing'];
+  if(words.some(w=>!!w.sentence))base.splice(3,0,'context');
+  return base;
+}
+function pickSessionSkill(word,preferred){
+  const skills=eligibleSkills(word);
+  if(preferred && skills.includes(preferred))return preferred;
+  const weak=skillWeakness(word);
+  return weak.find(s=>skills.includes(s))||skills[0];
+}
+function buildUniqueSequence(words,count,mode){
+  const pool=shuffle(words, `${localDay()}|${mode}|${words.map(w=>w.id).join(',')}`);
+  if(!pool.length)return [];
+  const out=[];
+  const cycle=skillCycleForWords(words);
+  let cycleIndex=0;
+  let round=0;
+  // Round 1: every eligible word appears before any repeat.
+  while(out.length<count){
+    const roundWords=round===0?pool:shuffle(words,`${localDay()}|${mode}|round|${round}`);
+    for(const w of roundWords){
+      if(out.length>=count)break;
+      const lastId=out[out.length-1]?.word?.id;
+      if(w.id===lastId && roundWords.length>1) continue;
+      const preferred=cycle[cycleIndex%cycle.length];
+      out.push({word:w,skill:pickSessionSkill(w,preferred)});
+      cycleIndex++;
+    }
+    round++;
+    if(round>100)break;
+  }
+  return out;
+}
+function makeSession(mode='quest',words=filteredWords(),length=null,rewardMultiplier=1,title='Тренировка'){
+  words=words.length?words:filteredWords();
+  if(!words.length){toast('Сначала добавь слова в словарь');return null}
+  let count=length||10;
+  if(mode==='context'){
+    words=words.filter(w=>w.sentence);
+    if(!words.length){toast('Для контекста нужны примеры предложений в словаре. Добавь их через импорт.');return null}
+  }
+  let plan;
+  if(mode==='quest') plan=buildUniqueSequence(words,count,mode);
+  else {
+    const eligible=mode==='context'?words:words;
+    let round=0;
+    plan=[];
+    while(plan.length<count){
+      const roundWords=shuffle(eligible,`${localDay()}|${mode}|unique|round${round}`);
+      for(const w of roundWords){
+        if(plan.length>=count)break;
+        const last=plan[plan.length-1]?.word?.id;
+        if(w.id===last && roundWords.length>1) continue;
+        plan.push({word:w,skill:mode});
+      }
+      round++;
+      if(round>100)break;
+    }
+  }
+  return {type:mode,title,questions:plan,index:0,correct:0,errors:[],rewardMultiplier};
+}
+function startMode(mode,opts={}){currentSession=makeSession(mode,opts.words||filteredWords(),opts.length,opts.rewardMultiplier||1,opts.title||'Тренировка');if(!currentSession)return;currentScreen='session';currentQuestion=null;buildNextQuestion();render();}
+function buildNextQuestion(){if(!currentSession)return;if(currentSession.index>=currentSession.questions.length){currentQuestion=null;return}const item=currentSession.questions[currentSession.index];currentQuestion={...item,feedback:'',extraHint:false,audioRetried:false};if(currentQuestion.skill==='writing' && state.inventory.scroll>0){state.inventory.scroll--;currentQuestion.extraHint=true;saveNoRender()} }
+function saveNoRender(){try{localStorage.setItem(APP_KEY,JSON.stringify(state))}catch(e){}}
+function answerCurrent(selectedId){
+  if(!currentSession||!currentQuestion||currentQuestion.locked)return;
+  const q=currentQuestion,w=q.word,correct=selectedId===w.id;
+  if(!correct && q.skill==='listening' && !q.audioRetried && state.inventory.crystal>0){
+    state.inventory.crystal--;q.audioRetried=true;q.locked=false;
+    q.feedback=`<div class="feedback bad"><div><b>Кристалл слуха активирован.</b><div class="small">Повтори аудио без потери Combo и монет.</div></div><div>🎧</div></div>`;
+    saveNoRender();render();setTimeout(()=>speakWord(w),120);return;
+  }
+  q.locked=true;const r=reward(correct,{challenge:currentSession.rewardMultiplier>1});
+  updateProgress(w,q.skill,correct);
+  if(correct){currentSession.correct++;petReact('happy');q.feedback=`<div class="feedback good"><div><b>Верно!</b><div class="small">+${r.coins} 🪙 · +${r.xp} XP</div></div><div>✓</div></div>`}
+  else{currentSession.errors.push({wordId:w.id,skill:q.skill});petReact('sad');q.feedback=`<div class="feedback bad"><div><b>Не так.</b><div class="small">${r.shieldUsed?'Щит сохранил Combo.':'Combo сброшен · −1 🪙'}</div></div><div>${esc(w.hanzi)}</div></div>`}
+  saveNoRender();
+  setTimeout(()=>{if(!currentSession)return;currentSession.index++;if(currentSession.index<currentSession.questions.length){buildNextQuestion();render()}else{render();petReact('celebrate')}},500);
+  render();
+}
+function retryAudio(){if(!currentQuestion||currentQuestion.skill!=='listening')return;currentQuestion.locked=false;currentQuestion.feedback='';render();setTimeout(()=>speakWord(currentQuestion.word),120)}
+
+function finishSessionReward(s){
+  const total=s.questions.length||1;const pct=s.correct/total;
+  return {coins:5+(pct>=.8?4:0),xp:10+(pct>=.8?10:0)};
+}
+function renderSessionResultHtml(s){
+  const total=s.questions.length, pct=Math.round(s.correct/total*100), recs=buildRecommendations(s.errors);
+  if(!s.rewarded){const bonus=finishSessionReward(s);state.coins+=bonus.coins;state.xp+=bonus.xp;s.rewarded=true;saveNoRender()}
+  const bonus=finishSessionReward(s);
+  return `<div class="result-card"><div class="subtle">${esc(s.title)}</div><div class="result-number">${s.correct}/${total}</div><div style="font-size:18px;font-weight:850">${pct}%</div><div class="subtle" style="margin-top:6px">Завершение серии: +${bonus.coins} 🪙 · +${bonus.xp} XP</div>${recs.length?`<div class="rec-list"><div class="mini-title" style="text-align:left">Что повторить</div>${recs.map(r=>`<div class="rec"><span>${esc(r.text)}</span><button class="ghost" data-review-skill="${r.skill}">Повторить</button></div>`).join('')}</div>`:''}<div class="result-actions"><button class="primary" data-action="continueAfterSession">Продолжить обучение</button><button class="ghost" data-nav="home">Домой</button></div></div>`;
+}
+function buildRecommendations(errors){const map={};errors.forEach(e=>map[e.skill]=(map[e.skill]||0)+1);return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([skill,count])=>({skill,text:`${skillName(skill)} — ${count} ошибок`}));}
+
+function buildBossPlan(words){
+  if(!words.length)return [];
+  const plan=[];const skillOrder=['meaning','pinyin','listening','writing','context'];const used=new Map();
+  const base=shuffle(words,'boss-base-'+localDay());
+  // First pass: every word appears once, but the skills are deliberately distributed.
+  for(let i=0;i<base.length&&plan.length<50;i++){
+    const w=base[i],skills=eligibleSkills(w);let desired=skillOrder[i%skillOrder.length];
+    let skill=skills.includes(desired)?desired:(skills.find(x=>x===skillOrder[(i+1)%skillOrder.length])||skills[0]);
+    plan.push({word:w,skill});used.set(w.id,[skill]);
+  }
+  // Remaining questions: repeat words with a different skill whenever possible.
+  let round=1;
+  while(plan.length<50){
+    let added=0;const rotated=shuffle(words,`boss-round-${round}-${localDay()}`);
+    rotated.forEach((w,idx)=>{
+      if(plan.length>=50)return;
+      const skills=eligibleSkills(w),prior=used.get(w.id)||[];
+      let skill=skillOrder[(round+idx)%skillOrder.length];
+      const alternatives=skillOrder.filter(x=>skills.includes(x)&&!prior.includes(x));
+      if(!skills.includes(skill)||prior.includes(skill))skill=alternatives[0]||skills[(round+idx)%skills.length];
+      if(!skill)return;
+      plan.push({word:w,skill});used.set(w.id,[...prior,skill]);added++;
+    });
+    if(!added)break;
+    round++;if(round>12)break;
+  }
+  return plan.slice(0,50);
+}
+function canBoss(){const words=filteredWords();return {hasWords:words.length>0,mastered:allMastered(words),ticket:(state.inventory.bossTicket||0)>0,remaining:remainingMastered(words).length}}
+function renderBossScreen(){
+  const root=document.getElementById('app');
+  if(!bossSession){
+    const c=canBoss();root.innerHTML=shell(`<div class="screen active boss"><div class="page-head"><button class="back" data-nav="home">←</button><div><h1>👑 Босс</h1><div class="subtle">50 заданий · проверка значения, пиньиня, слуха, письма и контекста.</div></div></div>${c.hasWords&&c.mastered&&c.ticket?`<div class="boss-head"><div class="boss-title"><div><div class="mini-title">Босс готов</div><div class="subtle">Билет будет потрачен при входе.</div></div><div style="font-size:40px">🐲</div></div><div class="hpbar" style="margin-top:14px"><span></span></div><div style="margin-top:8px;color:var(--muted);font-size:12px">50 вопросов · HP босса 100 · билет расходуется при входе.</div><button class="primary" style="width:100%;margin-top:13px" data-action="startBoss">🎟️ Войти в бой</button></div>`:`<div class="boss-lock"><div style="font-size:42px">🔒</div><div class="mini-title">Босс пока закрыт</div><div class="lock-list"><div>1. Все слова выбранного набора должны быть полностью выучены.</div><div>2. Нужен отдельный <b>Boss Ticket</b> за 300 🪙.</div><div>3. После входа тебя ждут <b>50 заданий</b> с разными навыками.</div></div><div class="subtle">Сейчас готово: ${c.remaining} слов ещё требуют полной прокачки · билетов: ${c.ticket?1:0}</div><button class="secondary" data-action="store">🛍️ Открыть лавку</button></div>`}</div>`);renderStats();return;
+  }
+  renderBossQuestion(root);
+}
+function renderBossQuestion(root){
+  const b=bossSession,total=b.plan.length,i=b.index,q=b.plan[i],pct=Math.round(i/total*100),hp=Math.max(0,b.hp);
+  currentQuestion={word:q.word,skill:q.skill,locked:false,audioRetried:false};
+  let inner='';
+  if(q.skill==='writing'){
+    inner=`<div class="question-card"><div class="question-note">👑 Босс · написание</div><div class="prompt">Напиши иероглиф</div><div class="q-meaning">${esc(q.word.meaning)} · ${esc(q.word.pinyin)}</div><div class="writer-wrap"><div id="hanziWriter" class="hanzi-writer-target"></div></div><div class="writer-hint"><button class="secondary" data-action="writerHint">👁️ Показать подсказку</button><button class="ghost" data-action="writerRestart">🔄 Заново</button></div><div class="writer-note">Локальный режим письма работает прямо на iPad и не зависит от внешней библиотеки.</div><div id="writeFeedback"></div></div>`;
+  }else{
+    const top=q.skill==='listening'?`<button class="primary" style="margin:18px auto 6px;display:block" data-action="speakBoss">🔊 Прослушать</button>`:q.skill==='context'?`<div class="prompt">${esc(contextText(q.word))}</div>`:`<div class="q-hanzi">${esc(q.word.hanzi)}</div>${q.skill==='pinyin'?'<div class="prompt">Выбери правильное чтение</div>':''}${q.skill==='meaning'?'<div class="prompt">Выбери перевод</div>':''}`;
+    const opts=optionsFor(q.skill==='context'?'context':q.skill,q.word,4);
+    inner=`<div class="question-card"><div class="question-note">Задание ${i+1} из 50 · ${esc(skillName(q.skill))}</div><div class="question-main">${top}</div>${q.skill==='listening'?'<div class="prompt">Что ты услышал?</div>':''}${q.skill==='context'?'<div class="prompt">Какой иероглиф вставить?</div>':''}<div class="options">${opts.map((o,idx)=>`<button class="option" data-boss-answer="${esc(o.id)}">${esc(o.label)}</button>`).join('')}</div><div id="bossFeedback"></div></div>`;
+  }
+  root.innerHTML=shell(`<div class="screen active boss"><div class="session-top"><button class="back" data-action="leaveBoss">←</button><div style="flex:1"><div class="progress-line"><span style="width:${pct}%"></span></div></div><div class="subtle">${i+1}/50</div></div><div class="boss-head"><div class="hp-label"><span>❤️ HP босса</span><b>${hp}/100</b></div><div class="hpbar"><span style="width:${hp}%"></span></div></div>${inner}</div>`);renderStats();if(q.skill==='writing')setupWriting(q.word,true);}
+function startBoss(){const c=canBoss();if(!c.mastered||!c.ticket){toast('Босс пока закрыт');return}state.inventory.bossTicket=Math.max(0,(state.inventory.bossTicket||0)-1);bossSession={plan:buildBossPlan(filteredWords()),index:0,hp:100,correct:0,errors:[],amuletUsed:false,retry:false,locked:false};currentScreen='boss';currentQuestion=null;saveNoRender();render();}
+function bossAnswer(id){
+  const b=bossSession;if(!b||b.locked)return;const q=b.plan[b.index],correct=id===q.word.id;b.locked=true;
+  if(correct){b.correct++;updateProgress(q.word,q.skill,true);petReact('happy');nextBossQuestion(true)}
+  else if(state.inventory.amulet>0&&!b.amuletUsed&&!b.retry){b.amuletUsed=true;b.retry=true;state.inventory.amulet--;document.getElementById('bossFeedback').innerHTML=`<div class="feedback bad"><div><b>Амулет босса активирован.</b><div class="small">Можно восстановить это задание без потери HP.</div></div><button class="secondary" data-action="bossRetry">Восстановить</button></div>`;saveNoRender();renderBossFeedbackLock();}
+  else{b.hp=Math.max(0,b.hp-5);updateProgress(q.word,q.skill,false);b.errors.push({wordId:q.word.id,skill:q.skill});petReact('sad');nextBossQuestion(false)}
+}
+function renderBossFeedbackLock(){document.querySelectorAll('[data-boss-answer]').forEach(x=>x.disabled=true)}
+function bossRetry(){if(!bossSession)return;bossSession.retry=false;bossSession.locked=false;document.getElementById('bossFeedback')?.remove();renderBossQuestion(document.getElementById('app'));}
+function nextBossQuestion(correct){
+  saveNoRender();setTimeout(()=>{if(!bossSession)return;if(correct && bossSession.retry)bossSession.retry=false;bossSession.index++;if(bossSession.index>=bossSession.plan.length||bossSession.hp<=0){finishBoss();return}renderBossScreen()},360);
+}
+function finishBoss(){const b=bossSession,total=b.plan.length,pct=Math.round(b.correct/total*100),pass=b.correct>=40&&b.hp>0;const recs=buildRecommendations(b.errors);lastBossRecommendations=recs;if(pass){state.coins+=120;state.xp+=80;state.pet.friendship+=1;petReact('celebrate')}bossSession=null;saveNoRender();
+  const root=document.getElementById('app');root.innerHTML=shell(`<div class="screen active"><div class="result-card"><div style="font-size:50px">${pass?'👑':'🛡️'}</div><h1 style="margin:6px 0">${pass?'Босс повержен!':'Бой закончен'}</h1><div class="result-number">${b.correct}/${total}</div><div class="subtle">HP осталось: ${Math.max(0,b.hp)}/100</div>${pass?'<div style="margin-top:8px">Награда: +120 🪙 · +80 XP · +1 дружба</div>':'<div style="margin-top:8px">Билет использован. Ошибки сохранились в общей памяти.</div>'}${recs.length?`<div class="rec-list"><div class="mini-title" style="text-align:left">Рекомендации после босса</div>${recs.map(r=>`<div class="rec"><span>${esc(r.text)}</span><button class="ghost" data-review-skill="${r.skill}">Повторить</button></div>`).join('')}</div>`:''}<div class="result-actions"><button class="primary" data-nav="home">На главный экран</button>${recs.length?'<button class="secondary" data-review-first>Начать повтор</button>':''}</div></div></div>`);currentScreen='boss';renderStats();
+}
+
+function destroyWriter(){
+  if(writerInstance){try{writerInstance.cancelQuiz()}catch(e){}writerInstance=null;}
+  if(canvas){canvas.onpointerdown=canvas.onpointermove=canvas.onpointerup=canvas.onpointercancel=canvas.ontouchstart=canvas.ontouchmove=canvas.ontouchend=null;canvas=null;ctx=null;}
+}
+let writerInstance=null;
+function drawLocalGuide(word,animate=false,showTarget=false){
+  const guide=document.getElementById('writerGuide');if(!guide)return;
+  const g=guide.getContext('2d');g.clearRect(0,0,guide.width,guide.height);
+  const w=guide.width,h=guide.height;
+  g.strokeStyle='rgba(120,120,120,.14)';g.lineWidth=2;
+  g.beginPath();g.moveTo(w/2,20);g.lineTo(w/2,h-20);g.moveTo(20,h/2);g.lineTo(w-20,h/2);g.stroke();
+  const fitFont=()=>{let size=Math.min(w*0.68,h*0.68);g.font=`900 ${size}px "PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Noto Sans CJK","Microsoft YaHei",sans-serif`;while(g.measureText(word.hanzi).width>w*0.76&&size>120){size-=8;g.font=`900 ${size}px "PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Noto Sans CJK","Microsoft YaHei",sans-serif`};return size};
+  fitFont();g.textAlign='center';g.textBaseline='middle';
+  if(showTarget){
+    g.fillStyle='rgba(186,122,61,.08)';g.fillText(word.hanzi,w/2,h/2+6);
+    if(animate){g.strokeStyle='rgba(186,122,61,.50)';g.lineWidth=Math.max(4,w/120);g.lineJoin='round';g.setLineDash([16,10]);g.lineDashOffset=-(Date.now()/7)%120;g.strokeText(word.hanzi,w/2,h/2+6)}
+    else {g.strokeStyle='rgba(186,122,61,.26)';g.lineWidth=Math.max(3,w/150);g.strokeText(word.hanzi,w/2,h/2+6)}
+  }
+}
+function setupLocalWriter(word,isBoss=false){
+  const target=document.getElementById('hanziWriter');if(!target)return;
+  target.innerHTML=`<div class="writer-stage"><canvas id="writerGuide" class="writer-guide" width="640" height="640"></canvas><canvas id="writeCanvas" class="writer-ink" width="640" height="640"></canvas></div><div class="local-writer-tools"><button class="secondary" data-action="localHint">👁️ Показать подсказку</button><button class="ghost" data-action="writerRestart">🔄 Заново</button></div><div id="localWriterStatus" class="local-writer-status">Поле готово. Здесь нет готового иероглифа — сначала попробуй по значению. Подсказка покажет форму.</div><div class="local-writer-tools"><button class="primary" data-action="checkWriting">Проверить</button></div>`;
+  canvas=document.getElementById('writeCanvas');ctx=canvas.getContext('2d',{willReadFrequently:true});drawing=false;hasInk=false;
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--text').trim()||'#222';ctx.lineWidth=12;
+  drawLocalGuide(word,false,false);
+  let raf=0,lastPointerAt=0;
+  const repaint=()=>{drawLocalGuide(word,true);raf=requestAnimationFrame(repaint)};
+  const stopAnim=()=>{if(raf)cancelAnimationFrame(raf);raf=0;drawLocalGuide(word,false)};
+  const pos=(clientX,clientY)=>{const r=canvas.getBoundingClientRect();return {x:(clientX-r.left)*canvas.width/r.width,y:(clientY-r.top)*canvas.height/r.height}};
+  const begin=(clientX,clientY,pressure=.5)=>{const p=pos(clientX,clientY);drawing=true;hasInk=true;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineWidth=Math.max(7,Math.min(18,8+pressure*8));stopAnim();const st=document.getElementById('localWriterStatus');if(st)st.textContent='Пишем…'};
+  const move=(clientX,clientY,pressure=.5)=>{if(!drawing)return;const p=pos(clientX,clientY);ctx.lineWidth=Math.max(7,Math.min(18,8+pressure*8));ctx.lineTo(p.x,p.y);ctx.stroke()};
+  const end=()=>{if(!drawing)return;drawing=false;try{ctx.closePath()}catch(_){}const st=document.getElementById('localWriterStatus');if(st)st.textContent='Готово. Нажми «Проверить» ниже.'};
+  canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;lastPointerAt=Date.now();e.preventDefault();canvas.setPointerCapture?.(e.pointerId);begin(e.clientX,e.clientY,e.pressure||.5)});
+  canvas.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();move(e.clientX,e.clientY,e.pressure||.5)});
+  canvas.addEventListener('pointerup',e=>{lastPointerAt=Date.now();e.preventDefault();try{canvas.releasePointerCapture?.(e.pointerId)}catch(_){}end()});
+  canvas.addEventListener('pointercancel',e=>{lastPointerAt=Date.now();end()});
+  const touchPoint=t=>({x:t.clientX,y:t.clientY,pressure:typeof t.force==='number'&&t.force>0?t.force:.6});
+  canvas.addEventListener('touchstart',e=>{if(Date.now()-lastPointerAt<200)return;e.preventDefault();const t=e.changedTouches[0];if(t)begin(t.clientX,t.clientY,t.force||.6)},{passive:false});
+  canvas.addEventListener('touchmove',e=>{if(!drawing||Date.now()-lastPointerAt<200)return;e.preventDefault();const t=e.changedTouches[0];if(t)move(t.clientX,t.clientY,t.force||.6)},{passive:false});
+  canvas.addEventListener('touchend',e=>{if(Date.now()-lastPointerAt<200)return;e.preventDefault();end()},{passive:false});
+}
+function setupWriting(word,isBoss=false){destroyWriter();setupLocalWriter(word,isBoss)}
+function writerHint(){localHint()}
+function localHint(){
+  const q=currentQuestion?.word;if(!q)return;
+  drawLocalGuide(q,true,true);
+  const st=document.getElementById('localWriterStatus');if(st)st.textContent='Подсказка включена: ориентир показан крупно внутри поля. Попробуй повторить форму стилусом.';
+}
+function writerRestart(){if(currentQuestion?.word)setupWriting(currentQuestion.word,!!bossSession)}
+function finishWriterQuiz(summary,isBoss){
+  const w=currentQuestion?.word;if(!w)return;
+  const mistakes=summary?.totalMistakes||0;
+  if(isBoss){
+    const b=bossSession;if(!b||b.locked)return;b.locked=true;updateProgress(w,'writing',true);b.correct++;if(mistakes>=3)b.hp=Math.max(0,b.hp-2);saveNoRender();const fb=document.getElementById('writeFeedback');if(fb)fb.innerHTML=`<div class="feedback good"><div><b>Завершено.</b><div class="small">Ошибок по ходу задания: ${mistakes}${mistakes>=3?' · HP −2':''}</div></div><div>✓</div></div>`;setTimeout(()=>{if(!bossSession)return;b.index++;b.locked=false;if(b.index>=b.plan.length||b.hp<=0)finishBoss();else renderBossScreen()},500);return;
+  }
+  if(currentQuestion.locked)return;currentQuestion.locked=true;const r=reward(true,{challenge:currentSession?.rewardMultiplier>1});updateProgress(w,'writing',true);currentSession.correct++;petReact('happy');saveNoRender();const fb=document.getElementById('writeFeedback');if(fb)fb.innerHTML=`<div class="feedback good"><div><b>Отлично!</b><div class="small">${mistakes?`Ошибок: ${mistakes} · `:''}+${r.coins} 🪙 · +${r.xp} XP</div></div><div>✓</div></div>`;setTimeout(()=>{if(!currentSession)return;currentSession.index++;if(currentSession.index<currentSession.questions.length){buildNextQuestion();render()}else{render();petReact('celebrate')}},520);
+}
+function setupCanvasFallback(){return setupLocalWriter(currentQuestion?.word,!!bossSession)}
+function clearCanvas(){if(!canvas||!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);hasInk=false;const st=document.getElementById('localWriterStatus');if(st)st.textContent='Поле очищено.';if(currentQuestion?.word)drawLocalGuide(currentQuestion.word,false,!!pendingWritingHint)}
+function inkBitmap(c,size=40){const src=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let minX=c.width,minY=c.height,maxX=-1,maxY=-1;for(let y=0;y<c.height;y+=2){for(let x=0;x<c.width;x+=2){const a=src[(y*c.width+x)*4+3];if(a>25){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y)}}}if(maxX<0)return null;const pad=18;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX=Math.min(c.width-1,maxX+pad);maxY=Math.min(c.height-1,maxY+pad);const out=document.createElement('canvas');out.width=size;out.height=size;const oc=out.getContext('2d');const srcW=maxX-minX+1,srcH=maxY-minY+1;const scale=Math.min((size-4)/srcW,(size-4)/srcH);const dx=(size-srcW*scale)/2,dy=(size-srcH*scale)/2;oc.drawImage(c,minX,minY,srcW,srcH,dx,dy,srcW*scale,srcH*scale);const data=oc.getImageData(0,0,size,size).data;return {size,data};}
+function glyphBitmap(char,size=40){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.fillStyle='#000';g.textAlign='center';g.textBaseline='middle';g.font='110px "PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif';g.fillText(char,64,68);return inkBitmap(c,size)}
+function bitmapScore(a,b){if(!a||!b)return 0;let overlap=0,ua=0,ub=0;const s=a.size;for(let i=0;i<s*s;i++){const av=a.data[i*4+3]>20,bv=b.data[i*4+3]>20;if(av)ua++;if(bv)ub++;if(av&&bv)overlap++;}if(!ua||!ub)return 0;const j=overlap/(ua+ub-overlap);const ratio=Math.min(ua,ub)/Math.max(ua,ub);return Math.min(1,j*.84+ratio*.16)}
+function checkWriting(){if(!canvas||!hasInk)return;const score=Math.round(bitmapScore(inkBitmap(canvas),glyphBitmap(currentQuestion.word.hanzi))*100);const ok=score>=14;const el=document.getElementById('writeFeedback');el.innerHTML=`<div class="feedback ${ok?'good':'bad'}"><div><b>${ok?'Похоже на эталон':'Пока слишком непохоже'}</b><div class="small">оценка формы: ${score}%</div></div><button class="${ok?'primary':'secondary'}" data-action="finishWriting">${ok?'Продолжить':'Повторить'}</button></div>`;}
+function finishWriting(){if(!currentSession||!currentQuestion)return;const ok=Number((document.querySelector('#writeFeedback .small')?.textContent||'').match(/(\d+)%/)?.[1]||0)>=14;currentQuestion.locked=true;const w=currentQuestion.word;updateProgress(w,'writing',ok);const r=reward(ok,{challenge:currentSession.rewardMultiplier>1});if(ok){currentSession.correct++;petReact('happy')}else{currentSession.errors.push({wordId:w.id,skill:'writing'});petReact('sad')}saveNoRender();setTimeout(()=>{currentSession.index++;if(currentSession.index<currentSession.questions.length){buildNextQuestion();render()}else{render();petReact('celebrate')}},420)}
+
+function speakWord(word){if(!('speechSynthesis' in window)){toast('В этом браузере нет озвучивания.');return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(word.hanzi);u.lang='zh-CN';u.rate=state.settings.speechRate||.82;speechSynthesis.speak(u)}
+function selectedWordForReview(skill){const words=filteredWords();return words.filter(w=>wordMastery(w)<100).sort((a,b)=>ensureProgress(a)[skill]-ensureProgress(b)[skill])}
+function reviewSkill(skill){startMode(skill==='context'?'context':skill,{words:selectedWordForReview(skill),length:10,title:`Повтор: ${skillName(skill)}`})}
+function startChallenge(){if((state.inventory.challenge||0)<=0){toast('Нужна Карта испытания');return}state.inventory.challenge--;saveNoRender();startMode('quest',{length:10,rewardMultiplier:2,title:'Испытание — повышенная награда'})}
+
+function openStore(){petReact('shop');renderStore();document.getElementById('storeModal').classList.add('open')}
+function renderStore(){
+  const items=getShopItems().filter(x=>x.kind!=='theme');const ticket=state.inventory.bossTicket||0;
+  const themeCards=Object.values(THEMES).filter(t=>t.id!=='default').map(t=>{
+    const owned=state.ownedThemes.includes(t.id),active=state.activeTheme===t.id;
+    return `<div class="theme-shop-card"><div class="theme-preview ${t.id}"></div><div class="theme-name">${t.icon} ${esc(t.name)}</div><div class="theme-desc">${esc(t.desc)}</div><div class="price-row">${owned?`<span class="owned">${active?'Активна':'Куплено'}</span>`:`<button class="buy" data-buy="theme_${t.id}">${t.price} 🪙</button>`}</div></div>`;
+  }).join('');
+  document.getElementById('storeContent').innerHTML=`
+    <div class="pet-panel"><div class="pet-swatch">${petSvg()}</div><div><div style="font-weight:850">${esc(PET_TYPES[state.pet.activePet]?.name||'Питомец')} · дружба ${state.pet.friendship}</div><div class="subtle">Игрушки дают дружбу и новые реакции. Нажми на питомца на главном экране, чтобы вернуться сюда.</div></div></div>
+    <div class="mini-title" style="margin-top:14px">🐾 Твои питомцы</div>
+    <div class="pet-select-row" style="margin-top:8px">${Object.values(PET_TYPES).map(p=>{const owned=state.pet.ownedPets.includes(p.id),active=state.pet.activePet===p.id;return `<button class="pet-select ${active?'active':''} ${owned?'':'locked'}" data-pet-set="${p.id}"><div class="pet-swatch" style="margin:auto">${petSvg(p.id)}</div><div class="pet-select-name">${esc(p.name)}</div><div class="pet-select-price">${owned?'Есть':`${p.price} 🪙`}</div></button>`}).join('')}</div>
+    <div class="mini-row" style="margin-top:16px"><div><div class="mini-title">🛍️ Товары дня</div><div class="subtle">Расходники и игрушки меняются каждый день.</div></div><div class="pill">${localDay()}</div></div>
+    <div class="shop-grid">${items.map(item=>shopItemHtml(item)).join('')}</div>
+    <div style="margin-top:15px"><div class="mini-title">🎨 Темы интерфейса</div><div class="subtle" style="margin-top:3px">Все три дополнительные темы видны постоянно; после покупки можно переключаться между купленными.</div><div class="theme-shop-grid">${themeCards}</div></div>
+    <div class="shop-note"><b>Boss Ticket:</b> ${ticket} шт. · цена 300 🪙 · нужен вместе с полным изучением выбранных уроков.</div>
+    <div class="pet-panel" style="display:${(state.inventory.challenge||0)>0?'flex':'none'}"><div class="pet-mini">🗺️</div><div style="flex:1"><div style="font-weight:850">Карта испытания: ${state.inventory.challenge||0}</div><div class="subtle">10 вопросов с повышенной наградой.</div></div><button class="primary" data-action="startChallenge">Запустить</button></div>`;
+}
+function themeButtonHtml(th){return `<button class="theme-button ${state.activeTheme===th.id?'active':''}" data-theme-set="${th.id}"><div class="theme-preview ${th.id}"></div>${th.icon} ${esc(th.name)}</button>`}
+function shopItemHtml(item){let extra='';if(item.kind==='theme'&&state.ownedThemes.includes(item.theme))extra='<span class="owned">Куплено</span>';else if(item.kind==='toy'&&state.pet.ownedToys.includes(item.id))extra='<span class="owned">Уже есть</span>';else extra=`<button class="buy" data-buy="${item.id}">${item.price} 🪙</button>`;return `<div class="shop-item"><div class="shop-icon">${item.icon}</div><div class="shop-name">${esc(item.name)}</div><div class="shop-desc">${esc(item.desc)}</div><div class="price-row"><span class="subtle">${item.kind==='ticket'?'Особый товар':item.kind==='theme'?'Интерфейс':'Предмет'}</span>${extra}</div></div>`}
+
+function openSettings(){renderSettings();document.getElementById('settingsModal').classList.add('open')}
+function renderSettings(){document.getElementById('settingsContent').innerHTML=`<div class="settings-grid"><div class="mini-card"><div class="mini-title">Озвучивание</div><div class="mini-muted" style="margin-top:5px">Скорость речи: ${state.settings.speechRate}</div><input id="speechRate" type="range" min="0.6" max="1.1" step="0.05" value="${state.settings.speechRate}" style="width:100%;margin-top:8px"></div><div class="mini-card"><div class="mini-title">Диагностика</div><div class="diag">${diagRows().join('')}</div></div><button class="secondary" data-action="resetState">Сбросить прогресс и словарь</button></div>`}
+function diagRows(){return [['Хранилище браузера',!!window.localStorage],['Озвучивание',('speechSynthesis' in window)],['Письмо',true],['Перо / pointer',('PointerEvent' in window)||('ontouchstart' in window)],['Выбрано слов',filteredWords().length>0],['Товары дня',getShopItems().length>=6]].map(([n,ok])=>`<div class="diag-row"><span>${n}</span><span class="${ok?'ok':'no'}">${ok?'OK':'нет'}</span></div>`)}
+
+function exportBackup(){const blob=new Blob([JSON.stringify({app:'Hanzi Quest',version:DATA_VERSION,state},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='hanzi-quest-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function parseDelimitedLine(line,sep){
+  const cells=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(q&&line[i+1]==='"'){cur+='"';i++;}
+      else q=!q;
+    }else if(ch===sep&&!q){cells.push(cur.trim());cur='';}
+    else cur+=ch;
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+function detectHeader(row){
+  const norm=row.map(x=>String(x||'').toLowerCase().replace(/[\s_\-№]/g,''));
+  const hasH=norm.some(x=>['汉字','hanzi','word','слово','иероглиф','китайское'].includes(x)||x.includes('hanzi')||x.includes('иероглиф'));
+  const hasP=norm.some(x=>['拼音','pinyin','пиньинь','reading','чтение'].includes(x)||x.includes('pinyin'));
+  const hasM=norm.some(x=>['翻译','перевод','значение','meaning','translation','translationru','переводru','russian','rus'].includes(x)||x.includes('перевод')||x.includes('meaning'));
+  return hasH&&hasP&&hasM;
+}
+function parseLessonHeading(line){
+  const raw=String(line||'').trim();
+  let m=raw.match(/^(?:урок|lesson|unit)\s*№?\s*([0-9]+)(?:\s*[:.\-–—]\s*(.+))?$/i);
+  if(m)return `Урок ${m[1]}${m[2]?` — ${m[2].trim()}`:''}`;
+  m=raw.match(/^([0-9]+)\s*(?:урок|lesson|unit)$/i);if(m)return `Урок ${m[1]}`;
+  m=raw.match(/^第\s*([0-9]+)\s*课$/i);if(m)return `Урок ${m[1]}`;
+  return '';
+}
+function looksLikeHanzi(v){return /^[\u3400-\u4dbf\u4e00-\u9fff\u3005\u3007]{1,30}$/u.test(String(v||'').trim())}
+function looksLikePinyin(v){
+  const x=String(v||'').trim();
+  if(!x||/[\u0400-\u04FF\u0370-\u03FF\u4e00-\u9fff]/.test(x))return false;
+  const normalized=x.replace(/[0-9]/g,'').replace(/[üÜǖǘǚǜĀāÁáǍǎÀàĒēÉéĚěÈèĪīÍíǏǐÌìŌōÓóǑǒÒòŪūÚúǓǔÙù]/g,'a');
+  return /^[A-Za-zÀ-ž'’\-\s.·]+$/.test(normalized)&&normalized.split(/\s+/).every(t=>t.length<=18);
+}
+function looseLineCells(line){
+  const raw=String(line||'').trim();
+  // First handle the most common copied-list format: Hanzi + pinyin (possibly many syllables) + Cyrillic meaning.
+  const mRu=raw.match(/^([\u3400-\u4dbf\u4e00-\u9fff\u3005\u3007]{1,30})\s+([A-Za-zÀ-žüÜǖǘǚǜĀāÁáǍǎÀàĒēÉéĚěÈèĪīÍíǏǐÌìŌōÓóǑǒÒòŪūÚúǓǔÙù'’0-9.\-\s·]+?)\s+([\u0400-\u04FF].*)$/u);
+  if(mRu&&looksLikePinyin(mRu[2]))return [mRu[1].trim(),mRu[2].trim(),mRu[3].trim()];
+  const dashed=raw.split(/\s+[—–-]\s+/);
+  if(dashed.length>=3&&looksLikeHanzi(dashed[0])&&looksLikePinyin(dashed[1]))return [dashed[0].trim(),dashed[1].trim(),dashed.slice(2).join(' — ').trim()];
+  return null;
+}
+function lessonValues(raw){
+  const text=String(raw||'').trim();if(!text)return[];
+  return text.split(/\s*(?:\||\/|;|,|·)\s*/).map(x=>x.trim()).filter(Boolean).map(x=>{
+    const n=x.match(/^(?:урок|lesson|unit)\s*№?\s*(\d+)(?:\s*[.:\-–—]\s*(.*))?$/i)||x.match(/^(\d+)\s*(?:урок|lesson|unit)$/i)||x.match(/^第\s*(\d+)\s*课$/i);
+    if(n)return `Урок ${n[1]}${n[2]?` — ${n[2].trim()}`:''}`;
+    if(/^\d+$/.test(x))return `Урок ${x}`;
+    return x;
+  });
+}
+function chooseSeparatorCells(line){
+  const seps=['\t','|',';'];
+  // Comma is only considered a CSV separator when it produces a convincing 3-field record.
+  if(line.includes(',') && (line.trim().startsWith('"') || line.split(',').length>=3)){const csv=parseDelimitedLine(line,',');if(csv.length>=3 && (detectHeader(csv) || (looksLikeHanzi(csv[0])&&looksLikePinyin(csv[1]))))seps.push(',');}
+  let best=null,bestScore=-Infinity,bestSep='';
+  for(const sep of seps){
+    const cells=parseDelimitedLine(line,sep).map(x=>x.trim());
+    const nonEmpty=cells.filter(Boolean);
+    let score=-1000;
+    if(cells.length>=3)score=10+cells.length;
+    if(cells.length>=3&&looksLikeHanzi(cells[0]))score+=30;
+    if(cells.length>=3&&looksLikePinyin(cells[1]))score+=40;
+    if(cells.length>=3&&cells[2])score+=10;
+    if(sep===',')score-=2;
+    if(nonEmpty.length>=3)score+=4;
+    if(score>bestScore){bestScore=score;best=cells;bestSep=sep;}
+  }
+  return bestScore>0?{cells:best,sep:bestSep}:null;
+}
+function parseImportedText(text){
+  const rawLines=String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/);
+  const dataLines=rawLines.map((line,i)=>({line:line.trim(),num:i+1})).filter(x=>x.line);
+  const words=[],errors=[],lessons={},formatCounts={};
+  let currentLessons=[];let header=null;let headerSep='';
+  for(const entry of dataLines){
+    const line=entry.line;
+    const heading=parseLessonHeading(line);
+    if(heading){currentLessons=lessonValues(heading);continue;}
+    let chosen=chooseSeparatorCells(line),cells=chosen?.cells||null,format='separator';
+    // Header recognition from tab/pipe/semicolon/CSV rows.
+    if(cells&&detectHeader(cells)){header=cells.map(v=>v.toLowerCase().replace(/[\s_\-№]/g,''));headerSep=chosen.sep;continue;}
+    if(!cells||cells.length<3){cells=looseLineCells(line);format='loose';}
+    if(!cells||cells.length<3){errors.push(`Строка ${entry.num}: не удалось распознать. Нужен формат «汉字 pinyin перевод» или 3 поля через | ; Tab CSV`);continue;}
+    cells=cells.map(v=>String(v??'').trim());
+    formatCounts[format]=(formatCounts[format]||0)+1;
+    const aliases={hanzi:['汉字','hanzi','word','слово','иероглиф','китайское'],pinyin:['拼音','pinyin','пиньинь','reading','чтение'],meaning:['翻译','перевод','значение','meaning','translation','translationru','переводru','russian','rus'],sentence:['例句','sentence','пример','предложение','примерпредложения'],sentenceRu:['句子翻译','sentencetranslation','переводпредложения','переводпримера','sentenceru','ru sentence'],lesson:['lesson','урок','урок№','unit','тема']};
+    const idx={};if(header){for(const [key,list] of Object.entries(aliases)){const i=header.findIndex(h=>list.some(a=>h===a||h.includes(a)));if(i>=0)idx[key]=i;}}
+    let w={hanzi:'',pinyin:'',meaning:'',sentence:'',sentenceRu:'',lessons:[]};
+    if(header&&idx.hanzi!=null&&idx.pinyin!=null&&idx.meaning!=null){
+      w.hanzi=cells[idx.hanzi]||'';w.pinyin=cells[idx.pinyin]||'';w.meaning=cells[idx.meaning]||'';w.sentence=cells[idx.sentence]||'';w.sentenceRu=cells[idx.sentenceRu]||'';w.lessons=idx.lesson!=null?lessonValues(cells[idx.lesson]):currentLessons.slice();
+    }else{
+      // For separator rows, first 3 fields are the core record.
+      w.hanzi=cells[0]||'';w.pinyin=cells[1]||'';w.meaning=cells[2]||'';
+      if(!looksLikeHanzi(w.hanzi)||!looksLikePinyin(w.pinyin)){
+        const loose=looseLineCells(line);if(loose){w.hanzi=loose[0];w.pinyin=loose[1];w.meaning=loose[2];}
+      }
+      const tail=cells.slice(3);let lessonCell='';
+      if(tail.length>=3){
+        if(lessonValues(tail[0]).length){lessonCell=tail.shift();w.sentence=tail.shift()||'';w.sentenceRu=tail.shift()||'';}else{w.sentence=tail.shift()||'';w.sentenceRu=tail.shift()||'';lessonCell=tail.shift()||'';}
+      }else if(tail.length===2){if(lessonValues(tail[0]).length){lessonCell=tail[0];w.sentence=tail[1]||'';}else{w.sentence=tail[0]||'';w.sentenceRu=tail[1]||'';}}
+      else if(tail.length===1){if(lessonValues(tail[0]).length)lessonCell=tail[0];else w.sentence=tail[0]||'';}
+      w.lessons=[...new Set([...currentLessons,...lessonValues(lessonCell)])];
+    }
+    w=normalizeWord(w);
+    if(!looksLikeHanzi(w.hanzi)||!looksLikePinyin(w.pinyin)||!w.meaning){errors.push(`Строка ${entry.num}: не удалось уверенно распознать поля`);continue;}
+    words.push(w);
+    const ls=w.lessons.length?w.lessons:['Без урока'];ls.forEach(l=>lessons[l]=(lessons[l]||0)+1);
+  }
+  return {rows:dataLines.length,words,errors,lessons,formatCounts};
+}
+function mergeWords(words){
+  const map=new Map(state.words.map(w=>[w.id,normalizeWord(w)]));let added=0,updated=0;
+  for(const raw of words){
+    const w=normalizeWord(raw),old=map.get(w.id);
+    if(!old){map.set(w.id,w);added++;continue;}
+    const merged={...old};
+    merged.lessons=[...new Set([...(old.lessons||[]),...(w.lessons||[])])];
+    merged.lesson=merged.lessons[0]||'';
+    if(!merged.sentence&&w.sentence)merged.sentence=w.sentence;
+    if(!merged.sentenceRu&&w.sentenceRu)merged.sentenceRu=w.sentenceRu;
+    if(!merged.meaning&&w.meaning)merged.meaning=w.meaning;
+    map.set(w.id,merged);updated++;
+  }
+  state.words=[...map.values()];return {added,updated,total:state.words.length};
+}
+function importText(){
+  const ta=document.getElementById('importText');const result=parseImportedText(ta?.value||'');
+  importPreview={rows:result.rows,parsed:result.words.length,errors:result.errors,lessons:result.lessons,formatCounts:result.formatCounts};
+  if(!result.words.length){updateImportPreview();toast('Не удалось распознать ни одной полной записи');return;}
+  const m=mergeWords(result.words);saveNoRender();currentScreen='library';render();
+  toast(`Словарь: +${m.added}, обновлено ${m.updated} · всего ${m.total}`);
+}
+function decodeTextBuffer(buf){
+  const u8=new Uint8Array(buf);
+  const hasUtf8Bom=u8[0]===0xEF&&u8[1]===0xBB&&u8[2]===0xBF;
+  const has16=u8[0]===0xFF&&u8[1]===0xFE||u8[0]===0xFE&&u8[1]===0xFF;
+  try{
+    const utf=new TextDecoder('utf-8',{fatal:false}).decode(buf);
+    const bad=(utf.match(/�/g)||[]).length;
+    if(!bad||hasUtf8Bom||has16)return utf;
+  }catch(e){}
+  try{return new TextDecoder('windows-1251').decode(buf)}catch(e){return new TextDecoder('utf-8').decode(buf)}
+}
+function handleFileInput(e){
+  const f=e.target.files?.[0];if(!f)return;
+  const reader=new FileReader();reader.onload=()=>{
+    const text=decodeTextBuffer(reader.result);const ta=document.getElementById('importText');if(ta)ta.value=text;
+    const result=parseImportedText(text);importPreview={rows:result.rows,parsed:result.words.length,errors:result.errors,lessons:result.lessons,formatCounts:result.formatCounts};
+    updateImportPreview();document.getElementById('importText')?.focus();window.scrollTo({top:0,behavior:'smooth'});toast(`${f.name}: распознано ${result.words.length} слов из ${result.rows} строк`);
+  };reader.readAsArrayBuffer(f);
+}
+function handleBackupInput(e){const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const raw=JSON.parse(String(reader.result));if(!raw.state)throw new Error('bad');state=normalizeState(raw.state);save();toast('Резервная копия восстановлена')}catch(err){toast('Не удалось прочитать резервную копию')}};reader.readAsText(f,'utf-8')}
+function clearWords(){if(!confirm('Удалить словарь и весь прогресс?'))return;state=clone(defaults);currentScreen='home';save();}
+function resetState(){if(!confirm('Сбросить весь прогресс, монеты, магазин и словарь?'))return;state=clone(defaults);save();closeModals();currentScreen='home';render()}
+function toggleLesson(lesson){if(lesson==='__all'){state.selectedLessons=[]}else{const set=new Set(state.selectedLessons);set.has(lesson)?set.delete(lesson):set.add(lesson);state.selectedLessons=[...set]}save()}
+function speakBoss(){if(bossSession)speakWord(bossSession.plan[bossSession.index].word)}
+function continueTraining(){const words=filteredWords();if(!words.length){toast('Нет слов для тренировки');return}startMode('quest',{words,length:10,title:'Продолжение обучения'})}
+function leaveSession(){currentSession=null;currentQuestion=null;currentScreen='home';render()}
+function leaveBoss(){bossSession=null;currentScreen='home';render()}
+function closeModals(){document.querySelectorAll('.modal-backdrop').forEach(m=>m.classList.remove('open'))}
+
+// Event delegation
+
+document.addEventListener('click',e=>{
+  const nav=e.target.closest('[data-nav]');if(nav){closeModals();currentScreen=nav.dataset.nav;render();return}
+  const mode=e.target.closest('[data-mode]');if(mode){startMode(mode.dataset.mode);return}
+  const lesson=e.target.closest('[data-lesson]');if(lesson){toggleLesson(lesson.dataset.lesson);return}
+  const lessonOnly=e.target.closest('[data-lesson-only]');if(lessonOnly){state.selectedLessons=[lessonOnly.dataset.lessonOnly];save();currentScreen='lessons';render();return}
+  if(e.target.closest('[data-lesson-all]')){state.selectedLessons=[];save();return}
+  const petSet=e.target.closest('[data-pet-set]');if(petSet){buyPetOrSelect(petSet.dataset.petSet);return}
+  const dictLesson=e.target.closest('[data-dict-lesson]');if(dictLesson){const l=dictLesson.dataset.dictLesson;if(l==='__all')dictionaryLessonFilter=[];else{const set=new Set(dictionaryLessonFilter);set.has(l)?set.delete(l):set.add(l);dictionaryLessonFilter=[...set]}render();return}
+  const answer=e.target.closest('[data-answer-id]');if(answer){answerCurrent(answer.dataset.answerId);return}
+  const bossAns=e.target.closest('[data-boss-answer]');if(bossAns){bossAnswer(bossAns.dataset.bossAnswer);return}
+  const review=e.target.closest('[data-review-skill]');if(review){closeModals();currentScreen='session';reviewSkill(review.dataset.reviewSkill);return}
+  const buy=e.target.closest('[data-buy]');if(buy){buyItem(buy.dataset.buy);return}
+  const theme=e.target.closest('[data-theme-set]');if(theme){state.activeTheme=theme.dataset.themeSet;save();openStore();return}
+  const action=e.target.closest('[data-action]')?.dataset.action;
+  if(action){
+    if(action==='store')openStore();
+    else if(action==='toyReact')petToyReact();
+    else if(action==='settings')openSettings();
+    else if(action==='continue')continueTraining();
+    else if(action==='lessonFilter')currentScreen='library',render();
+    else if(action==='importText')importText();
+    else if(action==='backupExport')exportBackup();
+    else if(action==='clearWords')clearWords();
+    else if(action==='startBoss')startBoss();
+    else if(action==='bossRetry')bossRetry();
+    else if(action==='leaveSession')leaveSession();
+    else if(action==='leaveBoss')leaveBoss();
+    else if(action==='clearCanvas')clearCanvas();
+    else if(action==='checkWriting')checkWriting();
+    else if(action==='finishWriting')finishWriting();
+    else if(action==='writerHint')writerHint();
+    else if(action==='localHint')localHint();
+    else if(action==='writerRestart')writerRestart();
+    else if(action==='retryAudio')retryAudio();
+    else if(action==='speak')speakWord(currentQuestion.word);
+    else if(action==='speakBoss')speakBoss();
+    else if(action==='continueAfterSession'){const prior=currentSession?.type||'quest';currentSession=null;currentQuestion=null;if(prior==='quest')continueTraining();else startMode(prior,{length:10,title:'Следующая серия'})}
+    else if(action==='resetState')resetState();
+    else if(action==='startChallenge'){closeModals();startChallenge();}
+  }
+  if(e.target.closest('[data-close-modal]'))closeModals();
+  if(e.target.closest('[data-review-first]')){const r=lastBossRecommendations[0];if(r)reviewSkill(r.skill)}
+});
+document.addEventListener('input',e=>{if(e.target.id==='speechRate'){state.settings.speechRate=Number(e.target.value);saveNoRender();renderSettings()}});
+
+// Keyboard shortcut is deliberately small; pointer/touch is primary.
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+applyTheme();render();
+</script>
+</body>
+</html>
